@@ -32,6 +32,7 @@ function sanitiseHistory(raw: unknown): HistoryEntry[] {
     .map((item) => ({
       id: typeof item.id === 'string' ? item.id : newId(),
       text: item.text,
+      html: typeof item.html === 'string' ? item.html : null,
       createdAt: item.createdAt,
       source: (item.source ?? 'copy') as HistorySource,
       chars: typeof item.chars === 'number' ? item.chars : item.text.length,
@@ -49,7 +50,11 @@ export async function getHistory(): Promise<HistoryEntry[]> {
  * (the existing entry is moved to the top and re-stamped) and the list is capped
  * at MAX_HISTORY entries.
  */
-export async function addHistory(text: string, source: HistorySource): Promise<HistoryEntry[]> {
+export async function addHistory(
+  text: string,
+  source: HistorySource,
+  html: string | null = null,
+): Promise<HistoryEntry[]> {
   const normalised = text.replace(/\r\n/g, '\n');
   if (!normalised.trim()) return getHistory();
 
@@ -58,6 +63,7 @@ export async function addHistory(text: string, source: HistorySource): Promise<H
   const entry: HistoryEntry = {
     id: existing?.id ?? newId(),
     text: normalised,
+    html: html && html.trim() ? html : null,
     createdAt: Date.now(),
     source,
     chars: normalised.length,
@@ -114,19 +120,32 @@ export async function ensureStorageReady(): Promise<void> {
  * panel) inserts without re-reading the clipboard. Kept separate from the history so
  * "Clear" really clears the pending content.
  */
-export async function setCurrentSnippet(text: string, source: HistorySource): Promise<void> {
+export async function setCurrentSnippet(
+  text: string,
+  source: HistorySource,
+  html: string | null = null,
+): Promise<void> {
   const normalised = text.replace(/\r\n/g, '\n');
   await chrome.storage.local.set({
-    [CURRENT_KEY]: { text: normalised, at: Date.now(), source },
+    [CURRENT_KEY]: {
+      text: normalised,
+      html: html && html.trim() ? html : null,
+      at: Date.now(),
+      source,
+    },
   });
 }
 
-export async function getCurrentSnippet(): Promise<string | null> {
+export async function getCurrentSnippet(): Promise<{ text: string; html: string | null } | null> {
   const stored = await chrome.storage.local.get(CURRENT_KEY);
   const value = stored[CURRENT_KEY];
   if (!value || typeof value !== 'object') return null;
-  const text = (value as { text?: unknown }).text;
-  return typeof text === 'string' && text.trim() ? text : null;
+  const record = value as { text?: unknown; html?: unknown };
+  if (typeof record.text !== 'string' || !record.text.trim()) return null;
+  return {
+    text: record.text,
+    html: typeof record.html === 'string' && record.html.trim() ? record.html : null,
+  };
 }
 
 export async function clearCurrentSnippet(): Promise<void> {

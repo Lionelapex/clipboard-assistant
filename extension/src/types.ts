@@ -5,9 +5,17 @@ export type HistorySource = 'copy' | 'refresh' | 'selection';
 export interface HistoryEntry {
   id: string;
   text: string;
+  html: string | null;
   createdAt: number;
   source: HistorySource;
   chars: number;
+}
+
+export interface StoredSnippet {
+  text: string;
+  html: string | null;
+  at: number;
+  source: HistorySource;
 }
 
 export interface AssistantSettings {
@@ -24,7 +32,7 @@ export interface FieldDescriptor {
   maxLength: number | null;
 }
 
-export type InsertStrategy = 'native-value-setter' | 'exec-command' | 'range-insert' | 'typing' | 'none';
+export type InsertStrategy = 'native-value-setter' | 'exec-command' | 'insert-html' | 'range-insert' | 'typing' | 'none';
 
 export interface InsertResult {
   ok: boolean;
@@ -39,6 +47,8 @@ export interface InsertResult {
 
 export interface ClipboardReadResult {
   text: string;
+  /** Rich-text flavour of the same content, when the source provided one. */
+  html: string | null;
   via: 'offscreen' | 'navigator.clipboard';
 }
 

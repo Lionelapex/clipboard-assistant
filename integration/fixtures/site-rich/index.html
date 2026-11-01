@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Rich text fixture</title>
+    <style>
+      body { font: 15px/1.5 system-ui, sans-serif; margin: 0; padding: 32px; background: #f8fafc; color: #0f172a; }
+      main { max-width: 760px; margin: 0 auto; display: grid; gap: 18px; }
+      section { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; }
+      h1 { font-size: 20px; margin: 0 0 8px; }
+      h2 { font-size: 15px; margin: 0 0 4px; }
+      p { margin: 0 0 10px; color: #475569; font-size: 13px; }
+      #source h2 { font-size: 18px; color: #0f172a; }
+      #source strong { font-weight: 700; }
+      #source ul { margin: 0 0 8px 18px; }
+      #editor { min-height: 120px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 12px; }
+      #editor h2 { font-size: 18px; }
+      textarea { width: 100%; box-sizing: border-box; min-height: 100px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 9px 11px; font: inherit; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Rich text fixture</h1>
+      <p>Formatting source, an empty rich editor and a large plain field.</p>
+
+      <section>
+        <h2>Source with formatting</h2>
+        <div id="source">
+          <h2>Quarterly update</h2>
+          <p>We <strong>doubled</strong> reach and stayed <em>under budget</em>, with <u>no</u> new hires.</p>
+          <ul>
+            <li>First milestone</li>
+            <li>Second milestone</li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2>Empty rich editor</h2>
+        <div id="editor" contenteditable="true" role="textbox" aria-label="Rich editor"></div>
+      </section>
+
+      <section>
+        <h2>Large plain field</h2>
+        <textarea id="plain" aria-label="Large plain field" placeholder="No character limit"></textarea>
+      </section>
+    </main>
+  </body>
+</html>

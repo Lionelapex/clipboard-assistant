@@ -58,7 +58,11 @@ function normalizeMode(value: unknown): InsertMode {
   return value === 'type' || value === 'paste' ? value : 'auto';
 }
 
-export async function insertFromRequest(text: unknown, mode: InsertMode = 'auto'): Promise<ContentInsertResponse> {
+export async function insertFromRequest(
+  text: unknown,
+  mode: InsertMode = 'auto',
+  html: string | null = null,
+): Promise<ContentInsertResponse> {
   if (typeof text !== 'string' || !text.trim()) {
     return failure('empty', 'There is nothing to paste.');
   }
@@ -112,7 +116,7 @@ export async function insertFromRequest(text: unknown, mode: InsertMode = 'auto'
     return failure('unsupported', 'That field only accepts numbers.');
   }
 
-  const result = await insertTextIntoField(target, text, mode);
+  const result = await insertTextIntoField(target, text, mode, html);
 
   if (result.ok) {
     return {
@@ -150,6 +154,19 @@ function selectedText(): string {
   return doc.getSelection?.()?.toString() ?? '';
 }
 
+/** Selected markup, so a capture keeps headings, bold text and list structure. */
+function selectedHtml(): string | null {
+  const active = deepActiveElement();
+  if (isTextControl(active)) return null;
+  const doc = active?.ownerDocument ?? document;
+  const selection = doc.getSelection?.();
+  if (!selection || selection.rangeCount === 0) return null;
+  const container = doc.createElement('div');
+  container.appendChild(selection.getRangeAt(0).cloneContents());
+  const html = container.innerHTML.trim();
+  return html || null;
+}
+
 /** Bridges popup/background messages into the content script's page-side state. */
 export function installMessageBridge(): void {
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -169,7 +186,7 @@ export function installMessageBridge(): void {
         sendResponse(currentContext());
         return undefined;
       case 'ca:insert-text': {
-        void insertFromRequest(message.text, normalizeMode(message.mode)).then(sendResponse);
+        void insertFromRequest(message.text, normalizeMode(message.mode), message.html ?? null).then(sendResponse);
         return true;
       }
       case 'ca:capture-selection': {
@@ -183,9 +200,10 @@ export function installMessageBridge(): void {
           sendResponse({ ok: false, reason: 'empty' });
           return undefined;
         }
+        const html = selectedHtml();
         void (async () => {
-          await addHistory(text, 'copy');
-          await setCurrentSnippet(text, 'copy');
+          await addHistory(text, 'copy', html);
+          await setCurrentSnippet(text, 'copy', html);
           // Snapshot what the system clipboard holds at capture time. Automatic refresh must
           // not treat that older value as a new copy and overwrite this capture.
           try {
@@ -205,8 +223,8 @@ export function installMessageBridge(): void {
       }
       case 'ca:insert-current': {
         void (async () => {
-          const text = await getCurrentSnippet();
-          if (!text) {
+          const snippet = await getCurrentSnippet();
+          if (!snippet) {
             emitFlashStatus({
               kind: 'error',
               text: 'No stored text yet.',
@@ -215,8 +233,14 @@ export function installMessageBridge(): void {
             sendResponse({ ok: false, reason: 'empty' });
             return;
           }
-          const response = await insertFromRequest(text, normalizeMode(message.mode));
-          const verb = response.strategy === 'typing' ? 'Typed and verified' : 'Pasted and verified';
+          const text = snippet.text;
+          const response = await insertFromRequest(text, normalizeMode(message.mode), snippet.html);
+          const verb =
+            response.strategy === 'typing'
+              ? 'Typed and verified'
+              : response.strategy === 'insert-html'
+                ? 'Pasted with formatting'
+                : 'Pasted and verified';
           emitFlashStatus(
             response.ok
               ? {

@@ -43,6 +43,7 @@ async function ensureOffscreenDocument(): Promise<void> {
 interface OffscreenResponse {
   ok: boolean;
   text?: string;
+  html?: string | null;
   error?: string;
 }
 
@@ -76,7 +77,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     runOffscreenOperation(
       message.type === 'clipboard:read'
         ? { type: 'offscreen:read' }
-        : { type: 'offscreen:write', text: message.text },
+        : { type: 'offscreen:write', text: message.text, html: message.html },
     )
       .then((response) => sendResponse(response))
       .catch((error: unknown) => {

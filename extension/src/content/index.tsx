@@ -30,9 +30,9 @@ function mountPanel(): void {
 
 initFocusTracker();
 installMessageBridge();
-installCopyCapture((text) => {
-  void addHistory(text, 'copy');
-  void setCurrentSnippet(text, 'copy');
+installCopyCapture((text, html) => {
+  void addHistory(text, 'copy', html);
+  void setCurrentSnippet(text, 'copy', html);
   // The copy event means the system clipboard now holds this text.
   void markClipboardSeen(text);
 });

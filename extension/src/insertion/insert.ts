@@ -8,6 +8,7 @@ import {
 } from './dom';
 import { buildResult, normalizeText, readFieldValue, verifyText } from './verify';
 import { typeTextIntoField } from './typing';
+import { isRichHtml, sanitiseHtml } from './sanitise';
 
 export { normalizeText, readFieldValue, verifyText } from './verify';
 
@@ -125,7 +126,7 @@ function insertViaRange(el: HTMLElement, text: string): void {
   );
 }
 
-function insertIntoContentEditable(el: HTMLElement, text: string): InsertResult {
+function insertIntoContentEditable(el: HTMLElement, text: string, html: string | null): InsertResult {
   const startedAt = performance.now();
   const doc = ownerDocument(el);
   el.focus({ preventScroll: true });
@@ -137,6 +138,32 @@ function insertIntoContentEditable(el: HTMLElement, text: string): InsertResult 
     selection?.addRange(savedRange);
   } else {
     placeCaretAtEnd(el);
+  }
+
+  if (html) {
+    const clean = sanitiseHtml(html);
+    if (isRichHtml(clean)) {
+      let htmlOk = false;
+      try {
+        htmlOk = doc.execCommand('insertHTML', false, clean);
+      } catch {
+        htmlOk = false;
+      }
+      const richActual = readFieldValue(el);
+      if (htmlOk && verifyText(text, richActual).verified) {
+        return buildResult(el, 'insert-html', text, richActual, startedAt, 'Pasted with its original formatting.');
+      }
+      if (htmlOk && richActual.trim()) {
+        return buildResult(
+          el,
+          'insert-html',
+          text,
+          richActual,
+          startedAt,
+          'The rich-text editor changed the pasted markup.',
+        );
+      }
+    }
   }
 
   let strategy: InsertStrategy = 'exec-command';
@@ -174,6 +201,7 @@ export async function insertTextIntoField(
   el: HTMLElement,
   text: string,
   mode: InsertMode = 'auto',
+  html: string | null = null,
 ): Promise<InsertResult> {
   if (!el.isConnected) {
     const startedAt = performance.now();
@@ -209,7 +237,9 @@ export async function insertTextIntoField(
   }
 
   const before = readFieldValue(el);
-  const pasted = isTextControl(el) ? insertIntoInput(el, text) : insertIntoContentEditable(el, text);
+  const pasted = isTextControl(el)
+    ? insertIntoInput(el, text)
+    : insertIntoContentEditable(el, text, html);
 
   if (mode === 'paste' || pasted.verified) return pasted;
 

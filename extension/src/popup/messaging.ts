@@ -65,8 +65,9 @@ export function requestInsert(
   tab: chrome.tabs.Tab | null,
   text: string,
   mode: 'auto' | 'paste' | 'type' = 'auto',
+  html: string | null = null,
 ): Promise<ContentInsertResponse | null> {
-  return sendToTab<ContentInsertResponse>(tab, { type: 'ca:insert-text', text, mode });
+  return sendToTab<ContentInsertResponse>(tab, { type: 'ca:insert-text', text, mode, html });
 }
 
 export async function openPanel(tab: chrome.tabs.Tab | null): Promise<boolean> {

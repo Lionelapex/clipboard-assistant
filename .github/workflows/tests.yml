@@ -1,0 +1,56 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  integration:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install extension dependencies
+        working-directory: extension
+        run: npm ci
+
+      - name: Build the extension
+        working-directory: extension
+        run: npm run build
+
+      - name: Install mock website dependencies
+        working-directory: mock-website
+        run: npm ci
+
+      - name: Install integration dependencies
+        working-directory: integration
+        run: npm ci
+
+      # The suite drives the Google Chrome that ships with the windows-latest image,
+      # so no Playwright browser download is needed.
+      - name: Run the Playwright suite
+        working-directory: integration
+        run: npx playwright test --reporter=line
+        env:
+          CI: true
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: |
+            integration/test-results
+            integration/playwright-report
+          retention-days: 7
+          if-no-files-found: ignore

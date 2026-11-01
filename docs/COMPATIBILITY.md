@@ -200,7 +200,22 @@ not just the absence of a success message.
 
 ---
 
-## 7. Known limitations
+## 7. Rich text and large content
+
+| Case | Result |
+| --- | --- |
+| Clipboard carrying `text/html` | read by the offscreen document (contenteditable paste); HTML kept beside plain text |
+| Heading, bold, italic, link, list into contenteditable | pass, structure kept through sanitised `insertHTML` |
+| 50,000 characters into a textarea | pass, full length verified |
+| `maxlength="24"` on the destination | field keeps 24 characters by its own rule; reported as truncated |
+| Script tag, `onerror` attribute, `javascript:` URL | removed before insertion |
+| Plain input or textarea | receives plain text, because the element cannot hold markup |
+
+The extension has no application-side character or word limit. The 50,000 character case is covered by
+`integration/tests/rich-text.spec.ts`, together with formatted insertion, sanitisation and formatted
+selection capture.
+
+## 8. Known limitations
 
 - **Iframes.** Same-origin frames are supported through a frame bridge. A cross-origin iframe is
   isolated by the browser and is reported as "No field selected" instead of being guessed at.

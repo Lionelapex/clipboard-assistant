@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ContentContext, ContentInsertResponse, HistoryEntry } from '../types';
-import { readClipboardText, writeClipboardText } from '../clipboard/read';
+import { readClipboardText, writeClipboardContent } from '../clipboard/read';
+import { isRichHtml } from '../insertion/sanitise';
 import {
   addHistory,
   CLIPBOARD_SEEN_KEY,
@@ -74,6 +75,7 @@ function failureStatus(reason: ContentInsertResponse['reason'], detail: string):
 export function PopupApp() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [preview, setPreview] = useState('');
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
   const [busy, setBusy] = useState<'idle' | 'reading' | 'pasting'>('idle');
@@ -84,17 +86,18 @@ export function PopupApp() {
   const seenClipboard = useRef<string | null>(null);
   const pollFailures = useRef(0);
 
-  const adoptClipboard = useCallback(async (text: string, expected: string | null) => {
+  const adoptClipboard = useCallback(async (text: string, html: string | null, expected: string | null) => {
     seenClipboard.current = text;
     await markClipboardSeen(text);
     // A capture shortcut or history selection may have written a newer snippet meanwhile.
     const latest = await getCurrentSnippet();
-    if (latest !== expected) return;
+    if ((latest?.text ?? null) !== expected) return;
     setPreview(text);
+    setPreviewHtml(html);
     setSelectedId(null);
     setVia('auto');
-    setHistory(await addHistory(text, 'refresh'));
-    await setCurrentSnippet(text, 'refresh');
+    setHistory(await addHistory(text, 'refresh', html));
+    await setCurrentSnippet(text, 'refresh', html);
     setStatus({
       kind: 'info',
       text: `Clipboard updated · ${formatNumber(text.length)} characters`,
@@ -114,10 +117,11 @@ export function PopupApp() {
       // Persist before updating the preview: once the UI shows the text, storage is settled
       // and a shortcut used immediately afterwards cannot be overwritten by this refresh.
       if (result.text.trim()) {
-        setHistory(await addHistory(result.text, 'refresh'));
-        await setCurrentSnippet(result.text, 'refresh');
+        setHistory(await addHistory(result.text, 'refresh', result.html));
+        await setCurrentSnippet(result.text, 'refresh', result.html);
       }
       setPreview(result.text);
+      setPreviewHtml(result.html);
       if (!silent) {
         setStatus(
           result.text.trim()
@@ -157,29 +161,37 @@ export function PopupApp() {
       try {
         const result = await readClipboardText();
         const text = result.text;
+        const currentText = current?.text ?? null;
+        const currentHtml = current?.html ?? null;
         if (text.trim()) {
           seenClipboard.current = text;
           const latest = await getCurrentSnippet();
-          const captureLanded = latest !== current;
+          const captureLanded = latest?.text !== current?.text;
           if (captureLanded) {
             // A shortcut capture finished while this read was in flight; it is newer than
             // whatever the clipboard holds, so it wins.
-            setPreview(latest ?? '');
+            setPreview(latest?.text ?? '');
+            setPreviewHtml(latest?.html ?? null);
             setSelectedId(null);
           } else if (text !== (seen ?? '')) {
-            await adoptClipboard(text, current);
-          } else if (current) {
-            setPreview(current);
+            await adoptClipboard(text, result.html, currentText);
+          } else if (currentText) {
+            setPreview(currentText);
+            setPreviewHtml(currentHtml);
             setSelectedId(null);
           } else {
-            await adoptClipboard(text, current);
+            await adoptClipboard(text, result.html, currentText);
           }
-        } else if (current) {
-          setPreview(current);
+        } else if (currentText) {
+          setPreview(currentText);
+          setPreviewHtml(currentHtml);
           setSelectedId(null);
         }
       } catch {
-        if (current) setPreview(current);
+        if (current) {
+          setPreview(current.text);
+          setPreviewHtml(current.html);
+        }
       }
 
       await loadTarget();
@@ -198,8 +210,8 @@ export function PopupApp() {
           pollFailures.current = 0;
           if (result.text === seenClipboard.current) return;
           const latest = await getCurrentSnippet();
-          if (latest !== before) return; // a capture or history selection happened meanwhile
-          await adoptClipboard(result.text, before);
+          if (latest?.text !== before?.text) return; // a capture or history selection happened meanwhile
+          await adoptClipboard(result.text, result.html, before?.text ?? null);
         } catch {
           pollFailures.current += 1;
         }
@@ -224,8 +236,9 @@ export function PopupApp() {
         setHistory((changes[HISTORY_KEY].newValue as HistoryEntry[] | undefined) ?? []);
       }
       if (changes[CURRENT_KEY]) {
-        const next = changes[CURRENT_KEY].newValue as { text?: string } | undefined;
+        const next = changes[CURRENT_KEY].newValue as { text?: string; html?: string | null } | undefined;
         setPreview(next?.text ?? '');
+        setPreviewHtml(typeof next?.html === 'string' ? next.html : null);
       }
     };
     chrome.storage.onChanged.addListener(listener);
@@ -236,11 +249,14 @@ export function PopupApp() {
     setBusy('pasting');
     try {
       let text = preview;
+      let html = previewHtml;
       if (!text.trim()) {
         try {
           const result = await readClipboardText();
           text = result.text;
+          html = result.html;
           setPreview(text);
+          setPreviewHtml(html);
           setVia(result.via);
         } catch (error) {
           setStatus({ kind: 'error', text: 'Clipboard could not be read.', detail: errorMessage(error) });
@@ -258,7 +274,7 @@ export function PopupApp() {
       }
 
       const target = tab ?? (await getTargetTab());
-      const response = await requestInsert(target, text, mode);
+      const response = await requestInsert(target, text, mode, html);
 
       if (!response) {
         setStatus({
@@ -289,7 +305,7 @@ export function PopupApp() {
     } finally {
       setBusy('idle');
     }
-  }, [preview, tab, loadTarget]);
+  }, [preview, previewHtml, tab, loadTarget]);
 
   const copy = useCallback(async () => {
     if (!preview.trim()) {
@@ -297,7 +313,7 @@ export function PopupApp() {
       return;
     }
     try {
-      await writeClipboardText(preview);
+      await writeClipboardContent(preview, previewHtml);
       setStatus({
         kind: 'success',
         text: 'Copied to clipboard.',
@@ -306,15 +322,16 @@ export function PopupApp() {
     } catch (error) {
       setStatus({ kind: 'error', text: 'Clipboard could not be updated.', detail: errorMessage(error) });
     }
-  }, [preview]);
+  }, [preview, previewHtml]);
 
   const clearContent = useCallback(async () => {
     setPreview('');
+    setPreviewHtml(null);
     setSelectedId(null);
     setVia(null);
     await clearCurrentSnippet();
     try {
-      await writeClipboardText('');
+      await writeClipboardContent('');
       setStatus({ kind: 'success', text: 'Content cleared.' });
     } catch {
       setStatus({
@@ -341,11 +358,12 @@ export function PopupApp() {
 
   const useEntry = useCallback(async (entry: HistoryEntry) => {
     setPreview(entry.text);
+    setPreviewHtml(entry.html);
     setSelectedId(entry.id);
     setVia('history');
     try {
-      await writeClipboardText(entry.text);
-      await setCurrentSnippet(entry.text, 'selection');
+      await writeClipboardContent(entry.text, entry.html);
+      await setCurrentSnippet(entry.text, 'selection', entry.html);
       setStatus({
         kind: 'success',
         text: 'Snippet loaded and copied.',
@@ -424,6 +442,7 @@ export function PopupApp() {
             <h2 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Clipboard</h2>
             <span className="text-[10px] text-slate-400">
               {preview ? `${formatNumber(preview.length)} characters` : 'empty'}
+              {previewHtml && isRichHtml(previewHtml) ? ' · formatted' : ''}
               {via ? ` · ${via}` : ''}
             </span>
           </div>

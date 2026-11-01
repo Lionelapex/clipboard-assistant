@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FieldDescriptor, HistoryEntry, InsertResult } from '../types';
-import { readClipboardText, writeClipboardText } from '../clipboard/read';
+import { readClipboardText, writeClipboardContent } from '../clipboard/read';
 import {
   CLIPBOARD_SEEN_KEY,
   CURRENT_KEY,
@@ -18,6 +18,7 @@ import {
   setCurrentSnippet,
 } from '../storage';
 import { describeField, getActiveField, insertTextIntoField, type InsertMode } from '../insertion';
+import { isRichHtml } from '../insertion/sanitise';
 import { formatNumber } from '../lib/format';
 import { cn } from '../lib/cn';
 import { ActionButton } from '../components/ActionButton';
@@ -63,6 +64,7 @@ export function FloatingPanel({ origin }: FloatingPanelProps) {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [preview, setPreview] = useState('');
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [field, setField] = useState<FieldDescriptor | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
@@ -76,18 +78,19 @@ export function FloatingPanel({ origin }: FloatingPanelProps) {
   const seenClipboard = useRef<string | null>(null);
   const pollFailures = useRef(0);
 
-  const adoptClipboard = useCallback(async (text: string, expected: string | null) => {
+  const adoptClipboard = useCallback(async (text: string, html: string | null, expected: string | null) => {
     seenClipboard.current = text;
     await markClipboardSeen(text);
     // Another surface (capture shortcut, history selection) may have written a newer snippet
     // while this clipboard read was in flight. Never overwrite it.
     const latest = await getCurrentSnippet();
-    if (latest !== expected) return;
+    if ((latest?.text ?? null) !== expected) return;
     setClipboardVia((via) => via ?? 'auto');
     setSelectedId(null);
     setPreview(text);
-    setHistory(await addHistory(text, 'refresh'));
-    await setCurrentSnippet(text, 'refresh');
+    setPreviewHtml(html);
+    setHistory(await addHistory(text, 'refresh', html));
+    await setCurrentSnippet(text, 'refresh', html);
     setStatus({
       kind: 'info',
       text: `Clipboard updated · ${formatNumber(text.length)} characters`,
@@ -104,9 +107,10 @@ export function FloatingPanel({ origin }: FloatingPanelProps) {
       seenClipboard.current = result.text;
       pollFailures.current = 0;
       void markClipboardSeen(result.text);
+      setPreviewHtml(result.html);
       if (result.text.trim()) {
-        setHistory(await addHistory(result.text, 'refresh'));
-        await setCurrentSnippet(result.text, 'refresh');
+        setHistory(await addHistory(result.text, 'refresh', result.html));
+        await setCurrentSnippet(result.text, 'refresh', result.html);
       }
       setPreview(result.text);
       if (!silent) {
@@ -142,7 +146,10 @@ export function FloatingPanel({ origin }: FloatingPanelProps) {
       ]);
       if (cancelled) return;
       setHistory(storedHistory);
-      if (current) setPreview(current);
+      if (current) {
+        setPreview(current.text);
+        setPreviewHtml(current.html);
+      }
       setPosition(
         settings.panelPosition ?? {
           x: Math.max(MARGIN, window.innerWidth - panelWidth() - MARGIN),
@@ -167,9 +174,10 @@ export function FloatingPanel({ origin }: FloatingPanelProps) {
       }
 
       if (changes[CURRENT_KEY]) {
-        const current = changes[CURRENT_KEY].newValue as { text?: string } | undefined;
+        const current = changes[CURRENT_KEY].newValue as { text?: string; html?: string | null } | undefined;
         if (typeof current?.text === 'string') {
           setPreview(current.text);
+          setPreviewHtml(typeof current.html === 'string' ? current.html : null);
           setSelectedId(null);
         }
       }
@@ -182,6 +190,7 @@ export function FloatingPanel({ origin }: FloatingPanelProps) {
       const newest = entries[0];
       if (newest && newest.source === 'copy' && Date.now() - newest.createdAt < 3000) {
         setPreview(newest.text);
+        setPreviewHtml(newest.html);
         setSelectedId(newest.id);
         setClipboardVia('copy event');
       }
@@ -226,32 +235,42 @@ export function FloatingPanel({ origin }: FloatingPanelProps) {
           if (!text.trim()) {
             seenClipboard.current = '';
             const current = await getCurrentSnippet();
-            if (!cancelled && current) setPreview(current);
+            if (!cancelled && current) {
+              setPreview(current.text);
+              setPreviewHtml(current.html);
+            }
             return;
           }
           seenClipboard.current = text;
           const seen = await getClipboardSeen();
           if (cancelled) return;
           const latest = await getCurrentSnippet();
-          if (latest !== before) {
+          if (latest?.text !== before?.text) {
             // A shortcut capture landed while this read was in flight; it wins.
-            if (!cancelled && latest) setPreview(latest);
+            if (!cancelled && latest) {
+              setPreview(latest.text);
+              setPreviewHtml(latest.html);
+            }
             return;
           }
           if (text !== (seen ?? '')) {
-            await adoptClipboard(text, before);
+            await adoptClipboard(text, result.html, before?.text ?? null);
             return;
           }
-          if (latest) setPreview(latest);
-          else await adoptClipboard(text, before);
+          if (latest) {
+            setPreview(latest.text);
+            setPreviewHtml(latest.html);
+          } else {
+            await adoptClipboard(text, result.html, before?.text ?? null);
+          }
           return;
         }
 
         if (!text.trim()) return;
         if (text === seenClipboard.current) return;
         const latest = await getCurrentSnippet();
-        if (latest !== before) return; // the user selected a snippet while this read ran
-        await adoptClipboard(text, before);
+        if (latest?.text !== before?.text) return; // the user selected a snippet while this read ran
+        await adoptClipboard(text, result.html, before?.text ?? null);
       } catch {
         pollFailures.current += 1;
       }
@@ -351,11 +370,14 @@ export function FloatingPanel({ origin }: FloatingPanelProps) {
 
   const pasteIntoField = useCallback(async (mode: InsertMode = 'auto') => {
     let text = preview;
+    let html = previewHtml;
     if (!text.trim()) {
       try {
         const result = await readClipboardText();
         text = result.text;
+        html = result.html;
         setPreview(text);
+        setPreviewHtml(html);
         setClipboardVia(result.via);
       } catch (error) {
         setStatus({ kind: 'error', text: 'Clipboard could not be read.', detail: errorMessage(error) });
@@ -384,7 +406,7 @@ export function FloatingPanel({ origin }: FloatingPanelProps) {
 
     setBusy('inserting');
     try {
-      const result = await insertTextIntoField(target, text, mode);
+      const result = await insertTextIntoField(target, text, mode, html);
       setLastInsert(result);
       if (result.verified) {
         const typed = result.strategy === 'typing';
@@ -405,12 +427,13 @@ export function FloatingPanel({ origin }: FloatingPanelProps) {
     } finally {
       setBusy('idle');
     }
-  }, [preview]);
+  }, [preview, previewHtml]);
 
   const clearClipboard = useCallback(async () => {
     try {
-      await writeClipboardText('');
+      await writeClipboardContent('');
       setPreview('');
+      setPreviewHtml(null);
       setSelectedId(null);
       setClipboardVia(null);
       setStatus({ kind: 'success', text: 'Clipboard cleared.' });
@@ -425,8 +448,8 @@ export function FloatingPanel({ origin }: FloatingPanelProps) {
       return;
     }
     try {
-      await writeClipboardText(preview);
-      await setCurrentSnippet(preview, 'selection');
+      await writeClipboardContent(preview, previewHtml);
+      await setCurrentSnippet(preview, 'selection', previewHtml);
       setClipboardVia('panel copy');
       setStatus({
         kind: 'success',
@@ -436,13 +459,14 @@ export function FloatingPanel({ origin }: FloatingPanelProps) {
     } catch (error) {
       setStatus({ kind: 'error', text: 'Clipboard could not be updated.', detail: errorMessage(error) });
     }
-  }, [preview]);
+  }, [preview, previewHtml]);
 
   const selectEntry = useCallback((entry: HistoryEntry) => {
     setPreview(entry.text);
+    setPreviewHtml(entry.html);
     setSelectedId(entry.id);
     setClipboardVia('history');
-    void setCurrentSnippet(entry.text, 'selection');
+    void setCurrentSnippet(entry.text, 'selection', entry.html);
     setStatus({ kind: 'info', text: 'Snippet selected.', detail: 'Press Paste to insert it into the active field.' });
   }, []);
 
@@ -601,6 +625,7 @@ export function FloatingPanel({ origin }: FloatingPanelProps) {
             <h2 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Clipboard</h2>
             <span className="text-[10px] text-slate-400">
               {preview ? `${formatNumber(preview.length)} characters` : 'empty'}
+              {previewHtml && isRichHtml(previewHtml) ? ' · formatted' : ''}
               {clipboardVia ? ` · ${clipboardVia}` : ''}
             </span>
           </div>

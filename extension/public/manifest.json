@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Clipboard Assistant",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "Read clipboard text, keep a local history and paste it into any text field on the page.",
   "minimum_chrome_version": "116",
   "icons": {
@@ -18,7 +18,7 @@
       "128": "icons/icon128.png"
     }
   },
-  "permissions": ["storage", "clipboardRead", "clipboardWrite", "offscreen", "scripting"],
+  "permissions": ["storage", "unlimitedStorage", "clipboardRead", "clipboardWrite", "offscreen", "scripting"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js",

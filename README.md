@@ -15,9 +15,10 @@ No account, no cloud, no analytics. Everything stays on your computer.
 [![Chrome](https://img.shields.io/badge/Chrome-supported-4285F4?logo=googlechrome&logoColor=white)](#install)
 [![Edge](https://img.shields.io/badge/Edge-supported-0C59A4?logo=microsoftedge&logoColor=white)](#install)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-3DDC84)](#technical-details)
-[![Version](https://img.shields.io/badge/version-1.4.1-black)](https://github.com/Lionelapex/clipboard-assistant/releases)
+[![Version](https://img.shields.io/badge/version-1.5.0-black)](https://github.com/Lionelapex/clipboard-assistant/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Local only](https://img.shields.io/badge/data-stays%20local-brightgreen)](#privacy)
+[![Tests](https://github.com/Lionelapex/clipboard-assistant/actions/workflows/tests.yml/badge.svg)](https://github.com/Lionelapex/clipboard-assistant/actions/workflows/tests.yml)
 
 **Contents**
 
@@ -27,6 +28,7 @@ No account, no cloud, no analytics. Everything stays on your computer.
   - [Install](#install)
   - [How to use it](#how-to-use-it)
   - [It updates itself](#it-updates-itself)
+  - [Formatting and size](#formatting-and-size)
   - [When a site only accepts typing](#when-a-site-only-accepts-typing)
   - [Your clipboard history](#your-clipboard-history)
   - [Privacy](#privacy)
@@ -39,6 +41,7 @@ No account, no cloud, no analytics. Everything stays on your computer.
   - [Test coverage](#test-coverage)
   - [How insertion works](#how-insertion-works)
   - [Automatic refresh](#automatic-refresh)
+  - [Continuous integration](#continuous-integration)
   - [Permissions](#permissions)
   - [Compatibility at a glance](#compatibility-at-a-glance)
   - [Keyboard shortcuts](#keyboard-shortcuts)
@@ -86,7 +89,7 @@ simply a clipboard manager for Chrome and Edge.
 The extension is not in the Chrome Web Store, so you install it yourself. It takes about a minute:
 
 1. Open the [latest release](https://github.com/Lionelapex/clipboard-assistant/releases) and download
-   **`clipboard-assistant-1.4.1.zip`**.
+   **`clipboard-assistant-1.5.0.zip`**.
 2. **Unzip it.** You should see `manifest.json` inside the folder.
 3. Open `chrome://extensions` (or `edge://extensions` in Edge) and turn on **Developer mode**.
 4. Click **Load unpacked** and choose the unzipped folder.
@@ -120,6 +123,21 @@ always uses the field you last clicked.
 You do not have to press **Refresh**. While the panel or popup is open, the assistant watches your
 clipboard and picks up a new copy within a second or two. Copy something in another app, look back at
 the panel, and it is already there. Refresh is still available if you want to force a re-read.
+
+## Formatting and size
+
+There is no character or word limit in Clipboard Assistant. A short email address and a 50,000
+character report take the same path, and the test suite includes a 50,000 character round trip. The
+only ceiling is the destination itself: if a form sets `maxlength="500"`, that form keeps 500
+characters, because its own rule outranks anything an extension does.
+
+Formatting is kept when the destination can hold it. Copy a heading, some bold words and a bulleted
+list, then paste into a rich text editor or a word-processor style box: the heading, bold text and
+list arrive with their structure. Plain fields (a normal input or textarea) cannot display bold, so
+they receive the same words as clean text.
+
+Pasted markup is cleaned before it reaches the page. Scripts, event handlers and `javascript:` links
+are removed, so a copied web page cannot inject code through the assistant.
 
 ## When a site only accepts typing
 
@@ -189,13 +207,13 @@ message is never shown unless the value really changed.
 | Piece | Stack or behaviour |
 | --- | --- |
 | Extension | React 18, TypeScript, Vite, Tailwind CSS, Manifest V3 |
-| Clipboard reads | Offscreen document (`execCommand('paste')`) first, `navigator.clipboard.readText()` fallback, which avoids per-site permission prompts |
+| Clipboard reads | Offscreen document (`execCommand('paste')`) first, capturing plain text and HTML in separate passes; `navigator.clipboard.read()` is a timed fallback |
 | Panel | Shadow DOM, so Tailwind cannot leak into or out of the host page; draggable, position persisted |
-| Insertion | Native prototype value setter plus a synthetic `input`; `execCommand('insertText')` for rich text; character-by-character typing for paste-hostile fields |
+| Insertion | Native prototype value setter plus a synthetic `input`; sanitised `insertHTML` for rich editors; `execCommand('insertText')` for plain text; character-by-character typing for paste-hostile fields |
 | Verification | Read-back comparison, whitespace normalised, with an alphanumeric fallback for masked inputs |
 | Focus tracking | Last-focused field (not `document.activeElement`), shadow-DOM aware and same-origin frame aware |
-| Storage | `chrome.storage.local`: history capped at 10, current snippet, panel state, clipboard fingerprint |
-| Tests | Playwright against the installed Chrome (no downloaded browser): 48 deterministic tests plus 2 opt-in live checks |
+| Storage | `chrome.storage.local`: history capped at 10 with text and HTML, current snippet, panel state, clipboard fingerprint |
+| Tests | Playwright against the installed Chrome (no downloaded browser): 52 deterministic tests plus 2 opt-in live checks |
 | Test site | A local "Lumen Foundation" grant application with configurable copy, paste and cut restrictions (A to E) |
 
 ## Repository layout
@@ -272,6 +290,10 @@ automatically, the explicit **Type it** button, a keydown-driven masked phone fi
 `tests/auto-refresh.spec.ts` (4 tests): first copy after opening, second copy while open, popup parity,
 and a captured selection surviving a stale clipboard read.
 
+`tests/rich-text.spec.ts` (4 tests): formatted clipboard content keeps its heading, bold text and list
+in a rich editor; script tags and event handlers are stripped before insertion; a 50,000 character
+paste arrives complete; and the capture shortcut stores formatted selection markup.
+
 `tests/allowcopy-live.spec.ts` and `tests/allowcopyplus-live.spec.ts` (opt-in): real sites. Content
 injection and capture on allowcopy.com, and every editable control on the Allow Copy + playground,
 including its Boss level (typing-only, masked phone, fake field) and embedded iframe widget.
@@ -286,8 +308,11 @@ The full matrix, mechanisms and failure classification live in
    first field.
 2. **Paste.** For `input` and `textarea`, the native prototype value setter bypasses React's patched
    setter so the framework's value tracker notices the change, and a synthetic `input` event follows.
-   For contenteditable, `execCommand('insertText')` runs in the element's own document, with a Range
-   fallback that preserves paragraph breaks.
+   For contenteditable, the clipboard's HTML is sanitised (allowlisted tags only; scripts, event
+   handlers, images and `javascript:` links are removed) and inserted with `execCommand('insertHTML')`,
+   so headings, bold text, links and lists keep their structure. Plain text uses
+   `execCommand('insertText')` in the element's own document, with a Range fallback that preserves
+   paragraph breaks.
 3. **Verify.** The field is read back and compared with the intended text. Truncation, read-only,
    disabled, removed and unsupported fields each get their own reason.
 4. **Retry by typing.** If the field reverted the value to exactly what it was before, the text is
@@ -305,11 +330,19 @@ value as soon as it differs from the last one it saw. A `clipboardSeen` fingerpr
 `Alt+Shift+C`, which deliberately does not touch the system clipboard. Adoption re-checks the stored
 snippet immediately before writing, so a capture or history selection that lands mid-read always wins.
 
+## Continuous integration
+
+`.github/workflows/tests.yml` runs on every push and pull request. It installs the three packages,
+builds the extension, and runs the 52 deterministic Playwright tests on a Windows runner using the
+Chrome that is already installed there. The two live checks stay opt-in because they depend on public
+websites.
+
 ## Permissions
 
 | Permission | Why |
 | --- | --- |
 | `storage` | history, current snippet, panel state, clipboard fingerprint |
+| `unlimitedStorage` | keeps large clipboard entries and history clear of the default storage quota |
 | `clipboardRead`, `clipboardWrite` | read the clipboard on request; Copy and Clear |
 | `offscreen` | DOM-based clipboard access without a per-site permission prompt |
 | `scripting` | inject the content script into tabs that were open before install |
@@ -326,6 +359,8 @@ technical message, never a fake allowlist error.
 | `input`, `textarea`, `contenteditable`, `plaintext-only` | pass |
 | React 18 controlled fields, Vue 3 `v-model`, dynamic fields | pass, with state and counters updated |
 | `maxlength`, Unicode, emoji, paragraphs, caret position | pass, read-back verified |
+| Rich text (heading, bold, italic, links, lists) into a contenteditable editor | pass, structure kept |
+| 50,000 character paste into a textarea | pass, nothing truncated by the extension |
 | Read-only, disabled, `type="number"`, removed field | refused with a specific reason |
 | Shadow DOM (web components) | pass |
 | Same-origin iframe or embedded widget | pass |
@@ -350,6 +385,12 @@ Rebind them at `chrome://extensions/shortcuts` (Edge: `edge://extensions/shortcu
 - **Typing is simulated.** Characters are sent as a cancelable `keydown` plus the browser's own insert
   command. A field that demands trusted key events (not just a trusted edit) would need the `debugger`
   API, which brings a visible debugging banner and is deliberately not used.
+- **Plain fields cannot show formatting.** An `input` or `textarea` stores text only, so headings and
+  bold arrive as plain words. Rich structure needs a contenteditable or rich text editor.
+- **A form's own `maxlength` still applies.** The extension does not bypass a destination's validation
+  rule, and a field that wants 500 characters will keep 500.
+- **Very large text in a typing-only field is slow.** Typing is character by character by definition;
+  a 50,000 character paste into a field that rejects bulk edits takes a long time.
 - **Cross-origin frames** are unreachable by design.
 - **Fake fields** (a `div` that paints text with no value) cannot be filled by any extension.
 - **Canvas-based editors** fall back to DOM insertion, and verification reports what actually happened.
@@ -410,16 +451,19 @@ value and dispatching the event a framework listens for.
 ## Contributing and license
 
 Pull requests are welcome. Fork the repository, create a branch, run the test suite, and open a pull
-request describing the change and the site it was tested on.
+request describing the change and the site it was tested on. The GitHub Actions workflow runs the same
+suite on every push, so a pull request shows a green tick before review.
 
 Released under the [MIT License](LICENSE), so you can use, modify and share it, including commercially,
 as long as the copyright notice is kept.
 
 ## Project status
 
-- **Version 1.4.1**: new logo and icon set, automatic clipboard refresh, typing-only field support,
-  same-origin frame bridge and the compatibility suite.
-- Verified on Windows 11 with Google Chrome 156: 48 deterministic tests passing, plus live checks
+- **Version 1.5.0**: rich text pastes (headings, bold, lists) through sanitised `insertHTML`, HTML
+  capture for the selection shortcut, no app-side character or word limit, `unlimitedStorage`, and the
+  GitHub Actions test workflow.
+- **Version 1.4.1**: new logo and icon set, MIT license, two-tier README.
+- Verified on Windows 11 with Google Chrome 156: 52 deterministic tests passing, plus live checks
   against allowcopy.com and the Allow Copy + playground (every real field filled, boss level completed,
   fake field refused).
 - Built by [Lionel Chapasuka (@Lionelapex)](https://github.com/Lionelapex). Issues and suggestions are
