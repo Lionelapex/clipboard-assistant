@@ -381,10 +381,14 @@ test.describe('Clipboard Assistant extension', () => {
     // refresh ignores empty clipboard reads.
     await popup.evaluate(() => navigator.clipboard.writeText(''));
     await popup.getByTestId('popup-copy').click();
-    expect(await popup.evaluate(() => navigator.clipboard.readText())).toBe('Copy me.');
+    await expect
+      .poll(() => popup.evaluate(() => navigator.clipboard.readText()), { timeout: 5000 })
+      .toBe('Copy me.');
 
     await popup.getByTestId('popup-clear').click();
     await expect(popup.getByTestId('popup-preview')).toContainText('Clipboard is empty');
-    expect(await popup.evaluate(() => navigator.clipboard.readText())).toBe('');
+    await expect
+      .poll(() => popup.evaluate(() => navigator.clipboard.readText()), { timeout: 5000 })
+      .toBe('');
   });
 });
