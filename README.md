@@ -1,461 +1,366 @@
-# Clipboard Assistant + mock application website
+# Clipboard Assistant — paste into any field, even where paste is blocked
 
-Two connected applications built from scratch to evaluate how effective **page-level clipboard
-restrictions** are against a browser extension that can read the clipboard and write directly into
-form fields.
+A free **Chrome and Microsoft Edge extension** that puts the text you copied into form fields that
+block, cancel or reject paste — the “please retype your password / email / essay” kind of field.
+It keeps a short clipboard history, refreshes itself automatically, and can **type** your text into
+forms that only accept real keystrokes.
 
-| Application | What it is |
+No account, no cloud, no analytics. Everything stays on your computer.
+
+[![Chrome](https://img.shields.io/badge/Chrome-supported-4285F4?logo=googlechrome&logoColor=white)](#install)
+[![Edge](https://img.shields.io/badge/Edge-supported-0C59A4?logo=microsoftedge&logoColor=white)](#install)
+[![Manifest V3](https://img.shields.io/badge/Manifest-V3-3DDC84)](#technical-details)
+[![Version](https://img.shields.io/badge/version-1.4.0-black)](https://github.com/Lionelapex/clipboard-assistant/releases)
+[![Local only](https://img.shields.io/badge/data-stays%20local-brightgreen)](#privacy)
+
+**Contents**
+
+- [Part 1 — For everyone](#part-1--for-everyone)
+  - [What this extension does](#what-this-extension-does)
+  - [What you can do with it](#what-you-can-do-with-it)
+  - [Install](#install)
+  - [How to use it](#how-to-use-it)
+  - [It updates itself](#it-updates-itself)
+  - [When a site only accepts typing](#when-a-site-only-accepts-typing)
+  - [Your clipboard history](#your-clipboard-history)
+  - [Privacy](#privacy)
+  - [Questions people ask](#questions-people-ask)
+  - [What it cannot do](#what-it-cannot-do)
+- [Part 2 — For developers](#part-2--for-developers)
+  - [Technical details](#technical-details)
+  - [Repository layout](#repository-layout)
+  - [Build, load and test](#build-load-and-test)
+  - [How insertion works](#how-insertion-works)
+  - [Automatic refresh](#automatic-refresh)
+  - [Permissions](#permissions)
+  - [Compatibility at a glance](#compatibility-at-a-glance)
+  - [Keyboard shortcuts](#keyboard-shortcuts)
+  - [Known limitations](#known-limitations)
+  - [Troubleshooting](#troubleshooting)
+  - [Project status](#project-status)
+
+---
+
+# Part 1 — For everyone
+
+## What this extension does
+
+Some websites stop you from pasting. You copy something — a password, an email address, a paragraph
+you already wrote somewhere else — and the field refuses it. Sometimes `Ctrl+V` does nothing. Sometimes
+the text appears for a split second and disappears. Some forms even insist you type every character by
+hand.
+
+**Clipboard Assistant gets your text into that field anyway.**
+
+You click the field, open the assistant, and press **Paste**. The text appears — paragraph breaks and
+all — and the extension checks that it really arrived instead of just saying “done”.
+
+It is a **clipboard manager and paste assistant for Chrome and Edge** that works on ordinary web
+forms, writing boxes, code editors and embedded widgets, on any website you can open.
+
+## What you can do with it
+
+- **Fill in application forms** without retyping your address, reference number or personal statement.
+- **Paste into “confirm your email / password” boxes** that try to force manual typing.
+- **Move long text between writing tools** — a draft, an essay answer, a support message — even when
+  the destination refuses the clipboard.
+- **Paste into code editors** and rich-text boxes that normally swallow pasted content.
+- **Reuse something you copied earlier** from the last ten snippets, without finding the source again.
+- **Paste into embedded widgets** (the small boxes inside a page) when they belong to the same site.
+
+People find this kind of tool by searching for: *extension to paste on sites that block copy and
+paste*, “paste” disabled field, Chrome extension that forces paste, paste into an exam answer box,
+clipboard manager for Chrome and Edge.
+
+## Install
+
+The extension is not in the Chrome Web Store, so you install it yourself — about a minute:
+
+1. Open the [latest release](https://github.com/Lionelapex/clipboard-assistant/releases) and download
+   **`clipboard-assistant-1.4.0.zip`**.
+2. **Unzip it.** You should see `manifest.json` inside the folder.
+3. Open `chrome://extensions` (or `edge://extensions` in Edge) and turn on **Developer mode**.
+4. Click **Load unpacked** and choose the unzipped folder.
+
+The Clipboard Assistant icon appears in your toolbar — pin it for one-click access.
+
+> Works on Chrome or Edge 116 and newer. After installing, reload any tab that was already open.
+
+## How to use it
+
+**The quick way**
+
+1. Copy the text you need — from another site, an app, a document.
+2. Click into the field you want to fill. The assistant remembers that field; you do not have to keep it
+   selected while you open the popup.
+3. Open the assistant: click its toolbar icon, or press `Alt+Shift+V` for the floating panel.
+4. Press **Paste**. The text goes in, and the assistant confirms the field it used and how many
+   characters it inserted.
+
+**The floating panel**
+
+A small round bubble sits at the bottom-right of every page. Click it (or press `Alt+Shift+V`) to open
+a panel you can drag anywhere. It shows the clipboard, the last ten copies, and the same
+Paste / Copy / Refresh / Clear buttons. Handy when you are filling several fields in a row.
+
+**If it says “No field selected”** — click into the text field first. The assistant never guesses: it
+always uses the field you last clicked.
+
+## It updates itself
+
+You do not have to press **Refresh**. While the panel or popup is open, the assistant watches your
+clipboard and picks up a new copy within a second or two. Copy something in another app, look back at
+the panel, and it is already there. Refresh is still available if you want to force a re-read.
+
+## When a site only accepts typing
+
+Some forms throw away anything that was not typed by hand — they undo a pasted block instantly,
+because they only accept one character at a time.
+
+For those fields the assistant has **⌨ Type it**. Instead of dropping the whole block in at once, it
+types your text one character at a time, the way a keyboard would, then checks the result.
+
+Press **Paste** first: if the field undoes it, the assistant retries automatically by typing. You can
+also press **⌨ Type it** directly in the panel or popup.
+
+## Your clipboard history
+
+The last **ten** things you copied are kept on your own computer, newest first, each with a timestamp
+and size. Click one to reuse it, delete one you do not need, or clear the whole list.
+
+Only copies the assistant actually saw are recorded, and anything a website blocks is not recorded.
+
+## Privacy
+
+- Everything is stored locally with `chrome.storage.local`.
+- No account, no server, no API key, no analytics, no telemetry.
+- Clipboard text never leaves your computer.
+- The clipboard is only read while the panel or popup is open (plus when you copy on a page), and is
+  only written when you press **Copy** or **Clear**.
+
+## Questions people ask
+
+**Is it free?** Yes — no paid tier, no sign-up.
+
+**Does it work on every website?** On every normal `http`/`https` page that Chrome lets an extension
+run on. Browser settings pages, the extension store and the built-in PDF viewer are blocked by the
+browser itself.
+
+**Can it paste into password boxes?** Yes; a password field accepts pasted text the same way it accepts
+typing. The assistant does not go looking for passwords — history only holds copies you actually make.
+
+**Why does a field still reject the text?** A few “fields” are not fields at all: they draw letters on
+screen and keep no real value. Nothing can be inserted into those, and the assistant tells you so
+instead of pretending.
+
+**Chrome or Edge?** Both — it is the same build, and Edge runs Chrome extensions directly.
+
+## What it cannot do
+
+- **Fill “fake” fields.** A box that only paints characters and keeps no text value cannot be filled by
+  any extension. You get a clear message instead of a silent failure.
+- **Reach into another website’s embedded frame.** Widgets served from a different domain are isolated
+  by the browser; same-site widgets work.
+- **Defeat a browser policy.** If your organisation blocks clipboard access or extensions, the
+  assistant reports the block rather than trying to get around security settings.
+- **Read text that is an image.** If the words are part of a picture, there is no text to copy.
+
+---
+
+# Part 2 — For developers
+
+## Technical details
+
+**Clipboard Assistant** is a Manifest V3 extension (React 18 + TypeScript + Vite + Tailwind) with a
+service worker, a content script that mounts a shadow-DOM panel on every page, an offscreen document
+for clipboard access, and a toolbar popup. Insertion is verified by reading the field back — a success
+message is never shown unless the value really changed.
+
+| Piece | Stack / behaviour |
 | --- | --- |
-| **Clipboard Assistant** (`extension/`) | Manifest V3 Chromium extension. Floating, draggable panel that reads clipboard text, keeps a local history, and inserts into the field the user last focused — then verifies the result. |
-| **Mock website** (`mock-website/`) | A normal-looking grant application website ("Lumen Foundation"). Six answer fields, character counters, completion indicators, and a configurable clipboard restriction manager (configurations A–E). |
+| Extension | React 18, TypeScript, Vite, Tailwind CSS, Manifest V3 |
+| Clipboard reads | Offscreen document (`execCommand('paste')`) first, `navigator.clipboard.readText()` fallback — avoids per-site permission prompts |
+| Panel | Shadow DOM (Tailwind cannot leak into or out of the host page), draggable, position persisted |
+| Insertion | Native prototype value setter + synthetic `input`; `execCommand('insertText')` for rich text; character-by-character typing for paste-hostile fields |
+| Verification | Read-back comparison, whitespace-normalised, with an alphanumeric fallback for masked inputs |
+| Focus tracking | Last-focused field (not `document.activeElement`), shadow-DOM aware, same-origin frame aware |
+| Storage | `chrome.storage.local` — history capped at 10, current snippet, panel state, clipboard fingerprint |
+| Tests | Playwright against the installed Chrome (no downloaded browser) — 48 deterministic tests + 2 opt-in live checks |
+| Test site | A local “Lumen Foundation” grant application with configurable copy/paste/cut restrictions (A–E) |
 
-Everything runs locally. There is no backend, authentication, cloud service or AI API, and clipboard
-contents never leave the browser.
+## Repository layout
 
----
-
-## Requirements
-
-- Node.js 18+ and npm (developed with Node 24 / npm 11)
-- Google Chrome or Microsoft Edge (Chromium 116+; tested on Google Chrome 156)
-- The integration tests use the **installed** Chrome — no Playwright browser download is needed
-
----
-
-## Quick start
-
-### 1. Run the mock website
-
-```bash
-cd mock-website
-npm install
-npm run dev
+```
+clipboard-assistant-project/
+  extension/            Manifest V3 extension (React + TS)
+    public/manifest.json
+    src/
+      background/       service worker: messages, offscreen lifecycle, shortcuts
+      content/          shadow-DOM panel, focus tracking, message bridge
+      popup/            toolbar popup
+      insertion/        insertion strategies, typing, verification, frame bridge
+      clipboard/        clipboard read/write, copy-event capture
+      storage/          history, current snippet, settings, clipboard fingerprint
+      components/       shared panel/popup UI
+  mock-website/         “Lumen Foundation” grant form + restriction test controls
+  integration/          Playwright suite, fixtures, scripts
+  docs/COMPATIBILITY.md Full compatibility matrix and failure classification
 ```
 
-Open <http://localhost:5173> (or <http://127.0.0.1:5173>).
-
-Production build / preview:
+## Build, load and test
 
 ```bash
-npm run build
-npm run preview      # http://localhost:4173
-```
-
-### 2. Build the extension
-
-```bash
+# 1. Extension
 cd extension
 npm install
-npm run build
+npm run build          # tsc + two Vite passes → extension/dist
+
+# 2. Load it
+#    chrome://extensions → Developer mode → Load unpacked → extension/dist
+
+# 3. Local test site
+cd ../mock-website
+npm install
+npm run dev            # http://localhost:5173
+
+# 4. Test suite (the extension must be built first)
+cd ../integration
+npm install
+npx playwright test
+
+# 5. Opt-in live checks against the public playground
+ALLCOPY_LIVE=1 npx playwright test tests/allowcopyplus-live.spec.ts tests/allowcopy-live.spec.ts
 ```
 
-The loadable extension is written to `extension/dist/`:
+**Why CDP instead of `--load-extension`?** Chrome 137 removed that switch, so the suite installs the
+unpacked build through the CDP command `Extensions.loadUnpacked`. It uses the Chrome already on the
+machine — no Playwright browser download.
 
-```
-dist/
-  manifest.json
-  background.js       # service worker (module)
-  content.js          # self-contained IIFE content script (React panel included)
-  popup.html          # toolbar popup
-  offscreen.html      # offscreen clipboard document
-  icons/              # 16/32/48/128 px
-  assets/             # hashed popup/offscreen assets
-```
+### Test coverage (48 deterministic + 2 live)
 
-### 3. Load it into Chrome
+`tests/mock-site.spec.ts` (7) — restriction matrix A–E, typing/backspace/arrows/selection/paragraphs,
+counters, event log, programmatic changes bypassing clipboard events, submit validation.
 
-1. Open `chrome://extensions`.
-2. Enable **Developer mode** (top right).
-3. Click **Load unpacked** and select the `extension/dist` folder.
-4. Pin **Clipboard Assistant** to the toolbar.
+`tests/extension.spec.ts` (12) — install and popup render; clipboard → preview → verified paste into the
+active field; field switching; caret insertion; input/textarea/contenteditable and a ~9,000-character
+snippet; panel drag/minimise/restore; history cap at 10; no-field error; popup Paste into the
+last-focused field; popup Copy and Clear.
 
-Microsoft Edge: open `edge://extensions` and follow the same three steps (`Load unpacked` is
-available with Developer mode enabled). The build is standard MV3 and uses APIs supported by Edge.
+`tests/universal.spec.ts` (5) — plain HTML, React 18 and dynamically created fields on an origin that
+appears nowhere in the extension source; two sites in one session; removed-field diagnostic.
 
-### 4. Use it
+`tests/compatibility.spec.ts` (15) — Vue 3 `v-model` and dynamic fields, `maxlength`, Unicode and
+paragraphs, read-only/disabled/number inputs, `plaintext-only`, multiple fields, open shadow DOM,
+same-origin iframe, cancelled `paste`, `Ctrl+V` keyboard trap, blocked `copy` + capture shortcut,
+shortcut insert flow, empty-storage diagnostic.
 
-**Toolbar popup (fastest path)**
+`tests/typing.spec.ts` (5) — bulk paste reverted by a >2-character guard and retyped automatically, the
+explicit **⌨ Type it** button, a keydown-driven masked phone field, a fake `div[role=textbox]` refused
+honestly, and a same-origin iframe field.
 
-1. Click into the answer field you want to fill — for example **01 Project summary**.
-2. Click the **Clipboard Assistant** toolbar icon. The popup shows **Target field: Project summary**
-   and the clipboard preview.
-3. If the preview is empty, press **Refresh**.
-4. Press **Paste**. The content is inserted into that field and the popup reports
-   “Pasted and verified · n characters”.
-5. Click another answer field (e.g. **02 Statement of need**), reopen the popup and press **Paste** —
-   the text goes into Q2. The popup always targets the field you last clicked; it never guesses the
-   first textarea on the page.
+`tests/auto-refresh.spec.ts` (4) — first copy after opening, second copy while open, popup parity, and a
+captured selection surviving a stale clipboard read.
 
-The popup can do this because the content script keeps a reference to the last focused field.
-Opening the popup takes focus away from the page, so the popup never relies on
-`document.activeElement` at paste time.
+`tests/allowcopy-live.spec.ts` and `tests/allowcopyplus-live.spec.ts` (opt-in) — real sites: content
+injection and capture on allowcopy.com, and every editable control on the Allow Copy + playground,
+including its Boss level (typing-only, masked phone, fake field) and embedded iframe widget.
 
-**Copy** puts the assistant's current snippet back on the system clipboard, **Clear** clears the
-assistant's stored content, **Refresh** re-reads the clipboard.
+The full matrix, mechanisms and failure classification live in
+[`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md).
 
-**Floating panel**
+## How insertion works
 
-1. A launcher bubble sits at the bottom right of every page; click it (or press `Alt+Shift+V`, or use
-   the popup's expand icon) to open the panel. It remembers its position and whether you left it open.
-2. Just copy text anywhere. The panel picks it up on its own (no Refresh needed) while it is open, and
-   refreshes again whenever the clipboard changes.
-3. Click into an answer field, then press **Paste**.
-4. If a field rejects pasted text (some forms revert anything that was not typed), press
-   **⌨ Type it** — or just paste again: a reverted paste is retyped character by character automatically.
-5. The status banner reports **“Inserted and verified”** with the target field, strategy and timing.
-   The character counter and completion indicator update because the site’s React state accepted the
-   programmatic change.
-6. Open **Test controls** (bottom left) to switch restriction configurations and watch the event log.
+1. **Resolve the target.** The last-focused editable element is tracked from `focusin`/`pointerdown`,
+   descending open shadow roots and same-origin frames. The popup never guesses the first field.
+2. **Paste.** For `input`/`textarea`, the native prototype value setter bypasses React’s patched setter
+   so the framework’s value tracker notices the change; a synthetic `input` event follows. For
+   contenteditable, `execCommand('insertText')` runs in the element’s own document, with a Range
+   fallback that preserves paragraph breaks.
+3. **Verify.** The field is read back and compared with the intended text. Truncation, read-only,
+   disabled, removed and unsupported fields each get their own reason.
+4. **Retry by typing.** If the field reverted the value to exactly what it was before, the text is
+   re-inserted one code point at a time: a cancelable `keydown` first (so masked inputs can
+   `preventDefault()` and own the character), then `execCommand('insertText')`, yielding every 16
+   characters. This is what fills “typing only” fields.
+5. **Frames.** Fields inside same-origin iframes are tracked by attaching focus listeners to the frame
+   document; cross-origin frames are reported as unreachable rather than guessed at.
 
-> After loading or reloading the extension, reload any tab that was already open — content scripts
-> are not injected into existing tabs.
+## Automatic refresh
 
-**Keyboard shortcuts**
+The panel polls the clipboard every 1.6 s while open (popup: 1.2 s) and adopts a value as soon as it
+differs from the last one it saw. A `clipboardSeen` fingerprint in `chrome.storage.local` stops a stale
+clipboard read from overwriting a snippet captured with `Alt+Shift+C`, which deliberately does not touch
+the system clipboard. Adoption re-checks the stored snippet immediately before writing, so a capture or
+history selection that lands mid-read always wins.
 
-| Shortcut | Action |
-| --- | --- |
-| `Alt+Shift+V` | Open / close the floating panel on the active tab |
-| `Alt+Shift+C` | Capture the current selection into the assistant, even where the page cancels `copy` |
-| `Alt+Shift+P` | Insert the stored snippet into the last-focused field and verify it |
-
-Rebind them at `chrome://extensions/shortcuts` (Edge: `edge://extensions/shortcuts`). The extension
-never tries to replace the browser's own `Ctrl+V`.
-
----
-
-## What is implemented
-
-| Requirement | Implementation |
-| --- | --- |
-| Clipboard retrieval on user action | `src/clipboard/read.ts`: offscreen document (primary, no per-site prompt) → `navigator.clipboard.readText()` fallback |
-| Preview with paragraph spacing | `ClipboardPreview` renders `white-space: pre-wrap`; raw text is stored unchanged |
-| Refresh / empty / permission errors | Refresh button; explicit “clipboard is empty” state; mapped `NotAllowedError` message |
-| Automatic refresh | The panel and popup watch the clipboard while they are open (1.6 s / 1.2 s) and adopt a new copy without a click; a captured selection is protected by a `clipboardSeen` fingerprint so a stale clipboard read never overwrites it |
-| Large selections | Verified with a ~9,000-character snippet in the integration tests |
-| Floating panel | React mounted in a shadow root on every page; draggable by the header, position persisted in `chrome.storage.local`, clamped to the viewport |
-| Panel controls | Heading, preview, Paste, Copy, Refresh, Clear, history, minimise, close, launcher |
-| Toolbar popup | Target-field card, Paste into the last-focused field, Copy, Refresh, Clear, history, open floating panel |
-| History (latest 10) | `src/storage/index.ts`: newest first, de-duplicated by text, timestamp + character count, per-entry delete, clear all, `chrome.storage.local` |
-| Insert into input / textarea | Native value setter + synthetic `input` event, so React-controlled fields update; caret position preserved; `maxLength` respected |
-| Insert into contenteditable / rich text | `document.execCommand('insertText')` with a saved selection range, falling back to Range insertion with `<br>` paragraph breaks |
-| Verification | Reads the field back and normalises whitespace before reporting success; failures show the reason and target field |
-| Active field identification | Capture-phase focus/pointer tracking; clicking the shadow-root panel does not lose the target |
-| Mock website layout | Sticky header with Home / Information / Application form nav, hero, guidance section, six answer sections, progress sidebar, footer |
-| Answer section anatomy | Question heading, description, guidance, large textarea, `n / 4,000` counter, Not started / In progress / Complete indicator |
-| Normal typing | Verified for typing, backspace, arrow keys, Home, selection, Enter and blank-line paragraphs |
-| Clipboard restrictions | Capture-phase `copy` / `paste` / `cut` handlers scoped to the answer form; `preventDefault()` + `stopPropagation()` |
-| Configurations | A Standard · B Paste restricted · C Copy restricted · D Copy and paste restricted · E Combined (site default) + individual toggles → “Custom” |
-| Programmatic update path | Test panel button writes through the native setter + synthetic `input`; logged separately as `programmatic-input` |
-| Site support | No application allowlist. Any http(s) page Chrome lets the extension run on, with fields detected dynamically (`aria-label`, `aria-labelledby`, `label[for]`, `legend`, nearest heading, placeholder, id/name) |
-| Keyboard shortcuts | `Alt+Shift+V` panel, `Alt+Shift+C` capture selection, `Alt+Shift+P` insert stored snippet (`chrome.commands`, rebindable) |
-| Typing-only fields | If a field reverts a bulk paste, the snippet is retyped one character at a time; `⌨ Type it` in the panel/popup forces that path |
-| Same-origin frame fields | Focus listeners attached inside same-origin iframes, so embedded widgets are inserted into like normal fields |
-| Shadow DOM fields | Focus tracking descends open shadow roots, so web-component textareas are targeted |
-| Field diagnostics | read-only, disabled, removed, unsupported input type, restricted page, no field — each reported as its own reason |
-| Framework coverage | React 18, Vue 3 `v-model`, plain HTML, `contenteditable`, `plaintext-only`, `maxlength`, dynamic fields |
-
----
-
-## Architecture
-
-```
-extension/
-  public/manifest.json          MV3 manifest (storage, clipboardRead/Write, offscreen, <all_urls>)
-  popup.html                    toolbar popup entry
-  offscreen.html                clipboard worker entry
-  src/background/index.ts       service worker: message routing, offscreen lifecycle, shortcut
-  src/offscreen/main.ts         DOM-based clipboard read/write (execCommand fallback)
-  src/content/index.tsx         mounts the panel in a shadow root, tracks focus, captures copies
-  src/content/FloatingPanel.tsx the draggable panel UI and all panel behaviour
-  src/clipboard/                readClipboardText / writeClipboardText / copy capture
-  src/insertion/                focus tracking, describeField, insertTextIntoField, verifyText
-  src/storage/                  history + settings in chrome.storage.local
-  src/content/messaging.ts      context + insertion bridge used by the popup (no site gating)
-  src/popup/messaging.ts        tab targeting, on-demand content-script injection
-  src/components/               shared UI (preview, history list, buttons, status, icons)
-  src/styles/                   Tailwind entry points (panel CSS is inlined into the shadow root)
-
-mock-website/
-  src/pages/HomePage.tsx        the application page (hero, guidance, form, progress)
-  src/components/               header, footer, field blocks, progress panel, test controls
-  src/forms/                    field definitions, completion logic, last-focused field tracking
-  src/restrictions/             presets, provider/persistence, event log, test hook
-  public/integration-harness.html  minimal input/textarea/contenteditable fixture for tests
-
-integration/
-  configuration/extension.config.ts  paths, ports, origins, test ids
-  fixtures/server.mjs                 serves two independent sites on port 5180
-  fixtures/site-plain/                plain HTML + dynamically created fields
-  fixtures/site-react/                React 18 page with controlled inputs
-  tests/mock-site.spec.ts             restriction matrix and form behaviour
-  tests/extension.spec.ts             extension flows against the mock site + harness
-  tests/universal.spec.ts             unregistered plain + React sites
-  scripts/screenshots.mjs             regenerates the screenshots in integration/screenshots/
-```
-
-### Why a shadow root?
-
-Tailwind’s reset and utility classes are compiled into `panel.css`, imported with `?inline`, and
-injected into the shadow root. Nothing from the panel leaks into the host page and the host page’s
-CSS cannot restyle the panel.
-
-### Why an offscreen document?
-
-MV3 service workers have no DOM and no clipboard access. `chrome.offscreen` creates a hidden
-extension document with the `CLIPBOARD` reason; it reads via `navigator.clipboard.readText()` and
-falls back to `document.execCommand('paste')`. Reads therefore do not trigger a per-site permission
-prompt.
-
-### How insertion works
-
-1. `initFocusTracker()` records the last focused editable element (and range for contenteditable).
-2. `insertTextIntoField()` picks a strategy:
-   - `HTMLInputElement` / `HTMLTextAreaElement` → native prototype value setter (bypasses React’s
-     patched setter so its value tracker sees a change), restores the caret, dispatches `input`.
-     Newlines are joined with spaces for single-line inputs, which cannot contain line breaks.
-   - contenteditable → `execCommand('insertText')` at the saved range, Range fallback with `<br>`.
-3. `verifyText()` reads the field back, normalises NBSP/CRLF/whitespace, and confirms the text is
-   present. The result is reported as verified or failed — never assumed.
-
-### Permissions
+## Permissions
 
 | Permission | Why |
 | --- | --- |
-| `storage` | Clipboard history and panel position/settings in `chrome.storage.local`. |
-| `clipboardRead`, `clipboardWrite` | Read the clipboard and clear it on an explicit button press. |
-| `offscreen` | Hidden document that performs clipboard I/O for the service worker. |
-| `host_permissions: <all_urls>` + content script on all URLs | The floating panel and the focus tracker must exist on the page before the popup opens, otherwise the field you clicked is unknown. This is Chrome's install-time permission, not an application allowlist. |
-| `scripting` | Injects the content script on demand when a tab was opened before the extension was installed. |
-| `commands` (no permission) | `Alt+Shift+V` shows/hides the panel. |
+| `storage` | history, current snippet, panel state, clipboard fingerprint |
+| `clipboardRead` / `clipboardWrite` | read the clipboard on request; Copy and Clear |
+| `offscreen` | DOM-based clipboard access without a per-site permission prompt |
+| `scripting` | inject the content script into tabs that were open before install |
+| `<all_urls>` | the assistant works on any normal page; there is no application-level allowlist |
 
-### Site access — there is no allowlist
+Chrome still protects its own surfaces: `chrome://`, `edge://`, the Web Store and the PDF viewer cannot
+be scripted, and `file://` pages need “Allow access to file URLs”. Those cases produce a specific
+technical message, never a fake allowlist error.
 
-The extension has **no approved-website list**. Nothing to register, no domain configuration file, and
-no code path comparing `location.origin` with a list. Any page Chrome lets the extension run on is
-usable:
+## Compatibility at a glance
 
-1. Install the extension once.
-2. Open any http(s) page.
-3. Click a text field, open the popup, press **Paste**.
-
-Only Chrome's own mechanisms gate access:
-
-- **Host access** (`<all_urls>` + declared content script) is granted at install. It is what lets the
-  floating panel exist and the focus tracker remember the field before the popup opens.
-- **`scripting`** is used only as a fallback: if a tab predates the install (no content script yet),
-  the popup injects `content.js` and retries, so you do not have to reload the page manually.
-
-Chrome still protects its own surfaces: `chrome://`, `edge://`, the Web Store and the PDF viewer
-cannot be scripted, and `file://` pages need the “Allow access to file URLs” toggle. Those cases show a
-specific technical message (`The assistant cannot access this page`), never a fake allowlist error.
-
-> If you prefer per-site permission prompts, Chrome's `activeTab` model can be adopted later, but the
-> floating panel would then only appear after invoking the extension on each page. The declared
-> content script is used here because focus must be tracked *before* the popup opens.
-
----
-
-## Clipboard restrictions on the mock site
-
-Restrictions are attached to the `<form>` element only, in the capture phase:
-
-| Configuration | copy | paste | cut |
-| --- | --- | --- | --- |
-| A · Standard | allowed | allowed | allowed |
-| B · Paste restricted | allowed | **blocked** | allowed |
-| C · Copy restricted | **blocked** | allowed | allowed |
-| D · Copy and paste restricted | **blocked** | **blocked** | allowed |
-| E · Combined restrictions (default) | **blocked** | **blocked** | **blocked** |
-
-- Blocked events call `preventDefault()` and `stopPropagation()`, so the browser does not copy, cut
-  or paste.
-- **Individual controls** toggle each of the three independently; a non-preset combination shows as
-  “Custom configuration”.
-- The selected configuration persists in `localStorage` (`lumen-mock:restriction-config`).
-- The event log records every clipboard event on an answer field as `blocked` or `allowed`, plus
-  `programmatic-input` entries for untrusted (script-generated) input events.
-
-**Clipboard events vs. programmatic changes are separate mechanisms.** Cancelling `paste` stops the
-browser’s paste pipeline; it does not stop an extension from assigning `field.value` and dispatching
-an `input` event. The **Simulate programmatic insert** button demonstrates exactly that while
-JavaScript remains enabled: the value and React state change, but no clipboard event occurs.
-
-### Test hook
-
-The mock site exposes a documented hook for the automated tests:
-
-```js
-window.__clipboardAssistantMock.getConfig()        // { configId, settings }
-window.__clipboardAssistantMock.setConfig('E')     // switch configuration
-window.__clipboardAssistantMock.getEvents()        // clipboard event log
-window.__clipboardAssistantMock.clearEvents()
-```
-
----
-
-## Integration tests
-
-```bash
-# the extension must be built first
-cd extension && npm run build
-
-cd ../integration
-npm install
-npx playwright test            # add --headed to watch the browser
-```
-
-The Playwright config starts both test servers automatically and reuses them if they are already
-running: the mock site (`npm --prefix ../mock-website run dev`) and the two fixture sites
-(`node fixtures/server.mjs` on port 5180).
-
-**Why CDP instead of `--load-extension`?** Chrome 137 removed the `--load-extension` and
-`--disable-extensions-except` switches. Playwright’s own bundled Chromium download is deliberately
-not used here. Instead the suite launches the installed Chrome with
-`--enable-unsafe-extension-debugging` and installs the unpacked build with the CDP command
-`Extensions.loadUnpacked` (Chrome 136+). No extra browser runtime is downloaded.
-
-### Coverage (48 tests + 2 opt-in live checks)
-
-`tests/mock-site.spec.ts` (7 tests):
-
-1. Defaults to Configuration E and the chips report blocked copy/paste/cut.
-2. Ordinary typing, arrow keys, backspace, Home, select-all replacement and `\n\n` paragraphs.
-3. Character counter and completion indicator transitions.
-4. Full restriction matrix A–E for paste, copy and cut.
-5. Blocked clipboard events appear in the log with the field name.
-6. Programmatic update bypasses clipboard restrictions and reaches React state.
-7. Submit validation lists the incomplete sections.
-
-`tests/extension.spec.ts` (12 tests):
-
-1. Extension installs via CDP and the toolbar popup renders.
-2. Clipboard read → preview → Paste → **verified** insertion into the active field (exact value with
-   paragraph breaks), counter updated, history recorded, ordinary paste still blocked.
-3. Second field insertion leaves the first field untouched and updates the active-field label.
-4. Caret-position insertion (`AAA BBB` + caret at 4 + “XXX ” → `AAA XXX BBB`).
-5. Input, textarea, contenteditable and a ~9,000-character snippet.
-6. Panel drag, minimise, restore, timestamps, per-entry delete, selection, clear all, clear
-   clipboard, close → launcher.
-7. History caps at the latest 10 snippets (12 added → 10 shown, newest/oldest correct).
-8. No focused field → explicit “No active field” error.
-9. Popup Paste inserts into the field clicked before the popup opened (paragraph breaks preserved).
-10. Popup Paste follows the most recently clicked field (Q1 stays untouched, Q2 receives the text).
-11. Popup with no focused field shows “No field selected” instead of guessing a field.
-12. Popup Copy puts the snippet back on the clipboard and Clear empties it.
-
-`tests/universal.spec.ts` (5 tests) — run against `http://127.0.0.1:5180`, an origin that appears
-nowhere in the extension source. `fixtures/server.mjs` serves a plain HTML page and a React 18 page:
-
-1. Plain HTML: text input, textarea and contenteditable all accept inserted text.
-2. Plain HTML: an input created after page load (via `document.createElement`) can be targeted.
-3. React 18: the controlled textarea updates React state (the character count changes).
-4. The same build pastes into the mock site and the plain site in sequence, with no cross-contamination.
-5. A field removed from the DOM produces the specific “field was removed” diagnostic, not a paste
-   into a different field.
-
-`tests/compatibility.spec.ts` (15 tests) — the framework and edge-case matrix, run against
-`site-vue` and `site-edge` on the fixture server:
-
-1. Vue 3 `v-model`: value and Vue state counter update; a field added after load is targeted.
-2. `maxlength=40` with a 60-character paste: 40 inserted, verified as 40.
-3. Unicode and paragraph breaks preserved (dashes, accents, emoji, `\n\n`).
-4. Read-only field: refused with the read-only diagnostic, value unchanged.
-5. Disabled field: refused with the disabled diagnostic.
-6. `type="number"`: refused with “only accepts numbers”.
-7. `contenteditable="plaintext-only"`: inserted text present in `innerText`.
-8. Multiple textareas stay independent.
-9. Open shadow DOM field: detected and editable.
-10. Same-origin iframe: documented as unreachable from the top-frame tracker.
-11. Cancelled `paste`: extension insertion still works.
-12. Keyboard trap on `Ctrl+V`: no paste event fires, extension insertion still works.
-13. Cancelled `copy`: clipboard unchanged, capture shortcut still stores the selection.
-14. Capture → insert-current shortcut flow: panel shows the snippet, storage is stable, value verified.
-15. `insert-current` with nothing stored reports the empty reason.
-
-`tests/typing.spec.ts` (5 tests) — the "typing-only" family on `site-typing`:
-
-1. A bulk paste that the field reverts (more than 2 characters in one input event) is retyped
-   automatically and verified; the page's refusal counter increments.
-2. The explicit **⌨ Type it** button types the snippet character by character.
-3. A masked phone field driven only by `keydown` receives the digits and the masked value verifies.
-4. A fake `div[role=textbox]` is refused with "This element only draws text…" and its text is unchanged.
-5. A textarea inside a same-origin iframe is reached through the frame bridge and verified.
-
-`tests/auto-refresh.spec.ts` (4 tests) — no manual Refresh:
-
-1. Opening the panel picks up a copy made afterwards without pressing Refresh; history + status update.
-2. A second clipboard change while the panel stays open is picked up again.
-3. The popup adopts a new copy while it is open and stores it as the current snippet.
-4. An automatic refresh never replaces a shortcut-captured selection with the stale clipboard value.
-
-`tests/allowcopyplus-live.spec.ts` (1 test, skipped unless `ALLCOPY_LIVE=1`) — drives the extension's
-own popup through every editable control on `allowcopyplus.pidevex.com/force-paste#try`, including
-the Boss level (typing-only, masked phone, fake field) and the embedded iframe widget. Results are
-written to `test-results/allowcopyplus-live.json`.
-
-`tests/allowcopy-live.spec.ts` (1 test, skipped unless `ALLCOPY_LIVE=1`) — opens
-`https://allowcopy.com/tools/allow-copy/` in the installed Chrome, confirms the content script is
-injected, captures a real article paragraph (989 characters), and confirms Paste reports
-“No field selected” because the page has no editable fields. Evidence is written to
-`test-results/allowcopy-live.json` and `.png`.
-
-See [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md) for the full matrix and failure classification.
-
----
-
-## Verification results
-
-Observed on Windows 11 with Google Chrome 156.0.8078.74, mock site served by Vite on
-`http://127.0.0.1:5173`:
-
-| Check | Result |
+| Scenario | Result |
 | --- | --- |
-| `extension` typecheck + build | pass (`tsc --noEmit`, two Vite passes) |
-| `mock-website` typecheck + build | pass |
-| `npx playwright test` | **48 passed**, 2 skipped (the opt-in live checks) |
-| Automatic refresh | panel and popup adopt a new clipboard value with no click; second change picked up; capture not clobbered |
-| Live check on `allowcopyplus.pidevex.com/force-paste` (`ALLCOPY_LIVE=1`) | every real field verified — typing-only **typed**, masked phone **typed**, fake field **refused** |
-| Typing-only field (reverts bulk changes) | auto-retry types character by character; value verified; refusal counter increments |
-| Masked phone (keydown-driven) | digits received, `+1 (202) 555-0143` verified |
-| Fake `div[role=textbox]` | refused with “This element only draws text…” |
-| Same-origin iframe field | focus tracked inside the frame; insertion verified |
-| Live check on `allowcopy.com` (`ALLOWCOPY_LIVE=1`) | 200 OK, content script injected, 989-char paragraph captured, paste refused with “No field selected” (page has 0 editable fields) |
-| Vue 3 `v-model` field | value + Vue state counter update; dynamic field targeted |
-| `maxlength=40` with 60-char paste | 40 characters inserted and verified as 40 |
-| Unicode + paragraphs | exact value match incl. emoji and `\n\n` |
-| Read-only / disabled / `type=number` | refused with the matching diagnostic; value unchanged |
-| Open shadow DOM field | inserted + verified |
-| Same-origin iframe | not reachable; explicit “No field selected” |
-| Page cancels `paste` / traps `Ctrl+V` | extension insertion still lands and verifies |
-| Page cancels `copy` | clipboard unchanged; capture shortcut still stores the selection |
-| Capture → insert shortcut flow | panel shows captured text; stored value stable; field verified |
-| Ordinary typing / backspace / arrows / selection / paragraphs | pass |
-| Copy restriction (configs C, D, E) | clipboard unchanged |
-| Paste restriction (configs B, D, E) | field unchanged |
-| Cut restriction (config E) | field unchanged |
-| Programmatic write under config E | field + React state update; logged as `programmatic-input` |
-| Extension insertion under config E | field value verified; character counter updated |
-| Popup Paste into last-focused field | inserted + verified, paragraph breaks intact |
-| Popup after switching fields | correct field updated; previously focused field unchanged |
-| Popup with no focused field | explicit “No field selected” error |
-| Popup Copy / Clear | clipboard replaced with the snippet / cleared |
-| New origin (plain HTML, never registered) | input, textarea and contenteditable insert + verify |
-| New origin (React 18) | controlled textarea value and React counter update |
-| Dynamic fields (plain + React) | created after load, targeted correctly |
-| Two sites in one session | independent fields; no cross-contamination |
-| Removed field | specific diagnostic; no fallback paste elsewhere |
-| Paragraph preservation | exact value match including `\n\n` |
-| Multiple fields | independent values, active-field label updates |
-| Contenteditable insertion | text present in `innerText` |
-| Large snippet (~9k chars) | exact value match |
-| History cap | 10 entries after adding 12 |
-| JS enabled throughout | all flows driven through the live React app; no JS disabled |
+| `<input>`, `<textarea>`, `contenteditable`, `plaintext-only` | pass |
+| React 18 controlled fields, Vue 3 `v-model`, dynamic fields | pass (state and counters update) |
+| `maxlength`, Unicode, emoji, paragraphs, caret position | pass (read-back verified) |
+| Read-only, disabled, `type="number"`, removed field | refused with a specific reason |
+| Shadow DOM (web components) | pass |
+| Same-origin iframe / embedded widget | pass |
+| Cross-origin iframe | not supported (browser isolation) |
+| Page cancels `paste`, traps `Ctrl+V`, blocks copy | extension insertion still works |
+| “Typing only” field that reverts bulk changes | pass (automatic retype) |
+| Masked phone-style field driven by `keydown` | pass (typed, mask verified) |
+| Fake field that draws letters and keeps no value | not possible — reported honestly |
 
-Screenshots: `integration/screenshots/` (`mock-desktop.png`, `mock-test-controls.png`,
-`panel-clipboard.png`, `panel-inserted.png`, `popup.png`, `mock-mobile.png`). Regenerate with
-`npm run screenshots` from the project root (mock site must be running).
+## Keyboard shortcuts
 
----
+| Shortcut | Action |
+| --- | --- |
+| `Alt+Shift+V` | Open or close the floating panel |
+| `Alt+Shift+C` | Capture the current selection into the assistant (works where `copy` is blocked) |
+| `Alt+Shift+P` | Insert the stored snippet into the last-focused field |
+
+Rebind them at `chrome://extensions/shortcuts` (Edge: `edge://extensions/shortcuts`).
+
+## Known limitations
+
+- **Typing is simulated.** Characters are sent as a cancelable `keydown` plus the browser’s own insert
+  command. A field that demands trusted *key* events (not just a trusted edit) would need the
+  `debugger` API, which brings a visible debugging banner and is deliberately not used.
+- **Cross-origin frames** are unreachable by design.
+- **Fake fields** (`div` that paints text with no value) cannot be filled by any extension.
+- **Canvas-based editors** fall back to DOM insertion; verification reports what actually happened.
+- **Polling, not events.** Automatic refresh has 1.2–1.6 s latency while the assistant is visible and
+  does not read the clipboard when it is closed.
+- **Chromium only.** `chrome.offscreen` and MV3 service workers are used; Firefox is not targeted.
+- **No store signing.** The extension is loaded unpacked, so Chrome shows the usual Developer-mode
+  reminder at startup. Store distribution would need a developer account.
+- **Panel position is global**, not per-site or per-tab.
+- **The mock website is not a real funder** — the “Lumen Foundation” form is a local test environment.
+
+## Troubleshooting
+
+| Symptom | Fix |
+| --- | --- |
+| “Manifest file is missing or unreadable” | You selected the source `extension` folder. Load **`extension/dist`**, or the unzipped release folder that contains `manifest.json`. |
+| No floating panel | Click the round bubble at the bottom right, or press `Alt+Shift+V`. Reload tabs that were open before install. |
+| “Clipboard could not be read” | Click the page once so it has focus. The assistant refreshes itself while open; **Refresh** retries on demand. |
+| “No field selected” | Click into the text field first — the assistant targets the last field you focused. |
+| “That field is read-only / disabled” | The page itself prevents edits; choose another field. |
+| “Insertion could not be verified” | The site reverted the change. Try **⌨ Type it**; if that fails too, it is not a real text field. |
+| Tests cannot find the extension | Run `npm run build` in `extension/` before `npx playwright test`. |
+| Port 5173 busy | Stop the other dev server; the Playwright config reuses an existing one. |
 
 ## Screenshots
 
@@ -467,56 +372,35 @@ Screenshots: `integration/screenshots/` (`mock-desktop.png`, `mock-test-controls
 | --- | --- |
 | ![Testing settings](integration/screenshots/mock-test-controls.png) | ![Toolbar popup](integration/screenshots/popup.png) |
 
----
+| Allow Copy + boss level, completed by the extension |
+| --- |
+| ![Boss level completed](integration/screenshots/live-allowcopyplus.png) |
 
-## Known limitations
+## The mock website (test environment)
 
-- **Clipboard reads can still be refused.** Corporate policies or browser flags can block
-  clipboard access entirely; the panel then reports the failure instead of pretending it read text.
-- **Rich-text support is best-effort.** `execCommand('insertText')` covers standard contenteditable
-  and most editors, but editors with their own document model (e.g. canvas-based) may reject or
-  reformat inserted text. Verification reports the actual outcome.
-- **Iframes.** Fields inside same-origin frames are supported (the frame bridge attaches focus
-  listeners there). Fields inside a cross-origin iframe are isolated by the browser and reported as
-  “No field selected”.
-- **Typing is a simulation, not hardware input.** Characters are sent as a cancelable `keydown`
-  followed by the browser's own insert command; a field that insists on `isTrusted` *key* events
-  (rather than trusting the resulting edit) cannot be filled by any extension without the debugger
-  API, which this extension deliberately does not use.
-- **Fake fields cannot be filled.** A `div` that draws letters and keeps no editable value has
-  nothing to write into; the assistant says so instead of pretending.
-- **Unselectable text cannot be captured.** `user-select: none`, transparent overlays and
-  keyboard traps can stop dragging and `Ctrl+C`. The capture shortcut reads the DOM selection, so it
-  works when the page only cancels `copy`, but there is nothing to read when selection itself is
-  blocked. Text served as an image has no text node at all.
-- **A page keyboard trap can stop `Ctrl+V`.** The extension does not defeat the trap; it inserts
-  through the DOM and dispatches the input event the framework listens for, which is unaffected.
-- **Page scripts cannot stop programmatic writes.** That is the point of the evaluation: cancelling
-  clipboard events does not defend against an extension writing to the DOM. The mock site shows this
-  explicitly rather than hiding it.
-- **Some pages cannot be scripted.** `chrome://`, `edge://`, the Web Store and the PDF viewer reject
-  content scripts, and `file://` pages need “Allow access to file URLs”. The popup reports these
-  technical restrictions; it never claims a site is “not allowed”.
-- **Automatic refresh polls only while the assistant is visible** (panel open or popup open), roughly
-  every 1.2–1.6 s. It does not read the clipboard in the background when the assistant is closed.
-- **Chromium only.** MV3 APIs (`chrome.offscreen`, service worker) are used; Firefox is not targeted.
-- **Panel position is global**, not per-site or per-tab.
-- **The mock website is not a real funder.** It is a local evaluation environment; the “Lumen
-  Foundation” content is illustrative.
-- **Test harness depends on Chrome ≥ 136** for `Extensions.loadUnpacked`. Manual “Load unpacked”
-  works on any Chrome/Edge that supports MV3.
+The separate `mock-website/` app is a normal-looking “Lumen Foundation” grant application: six answer
+sections, character counters, completion badges and a progress sidebar. Its testing panel switches
+clipboard restrictions so the extension can be measured against them.
 
----
+| Configuration | copy | paste | cut |
+| --- | --- | --- | --- |
+| A · Standard | allowed | allowed | allowed |
+| B · Paste restricted | allowed | **blocked** | allowed |
+| C · Copy restricted | **blocked** | allowed | allowed |
+| D · Copy and paste restricted | **blocked** | **blocked** | allowed |
+| E · Combined (default) | **blocked** | **blocked** | **blocked** |
 
-## Troubleshooting
+Blocked events call `preventDefault()` and `stopPropagation()`. The panel logs every clipboard event
+and separately logs programmatic `input` events, which is the point of the exercise: cancelling
+clipboard events stops the browser’s paste pipeline, not an extension writing a value and dispatching
+the event a framework listens for.
 
-| Symptom | Fix |
-| --- | --- |
-| **“Failed to load extension … Manifest file is missing or unreadable”** | Chrome was pointed at the source folder. Select **`extension/dist`**, not `extension`. In the folder picker, paste `D:\extension\clipboard-assistant-project\extension\dist` into the address bar, press Enter, then choose **Select Folder**. |
-| No floating panel | Look for the round launcher bubble at the bottom right (the panel no longer opens by itself). Press `Alt+Shift+V` or use the popup’s expand icon. Reload a tab that was open before install, or let the popup inject the content script automatically. |
-| “Clipboard could not be read” | The assistant refreshes automatically while the panel or popup is open. If the browser blocks the read, click the page once so it has focus; **Refresh** retries on demand. |
-| Paste says “The assistant cannot access this page” | Chrome blocks content scripts on `chrome://`, `edge://`, the Web Store and the PDF viewer. `file://` pages need “Allow access to file URLs” in the extension details. |
-| Paste says “No field selected” | Click into a text field on the page first — the assistant targets the last field you focused. |
-| Paste says “That field is read-only / disabled” | The page itself is preventing edits in that field; choose another field. |
-| Tests cannot find the extension | Run `npm run build` in `extension/` before `npx playwright test`. |
-| Port 5173 busy | Stop the other dev server; the Playwright config reuses an existing one. |
+## Project status
+
+- **Version 1.4.0** — automatic clipboard refresh, typing-only field support, same-origin frame bridge,
+  compatibility suite.
+- Verified on Windows 11 with Google Chrome 156: **48 deterministic tests passing**, plus live checks
+  against allowcopy.com and the Allow Copy + playground (every real field filled, boss level completed,
+  fake field refused).
+- Built by [Lionel Chapasuka (@Lionelapex)](https://github.com/Lionelapex). Issues and suggestions are
+  welcome — include the site, the field and what happened.
