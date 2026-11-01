@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 88px;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased;
+    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  ::selection {
+    background-color: #cbd5e1;
+  }
+}
+
+@layer components {
+  .field-shadow {
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.05);
+  }
+}

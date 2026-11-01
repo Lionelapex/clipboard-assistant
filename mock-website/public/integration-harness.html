@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Clipboard insertion test page</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 40px 24px;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        background: #f8fafc;
+        color: #0f172a;
+      }
+
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 24px;
+      }
+
+      h1 {
+        margin: 0 0 6px;
+        font-size: 20px;
+      }
+
+      .lead {
+        margin: 0 0 22px;
+        color: #64748b;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .field {
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #334155;
+      }
+
+      input,
+      textarea,
+      .editor {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-family: inherit;
+        font-size: 14px;
+        line-height: 1.6;
+        color: #1e293b;
+        background: #ffffff;
+      }
+
+      textarea {
+        resize: vertical;
+      }
+
+      .editor {
+        min-height: 120px;
+      }
+
+      .note {
+        margin: 20px 0 0;
+        font-size: 12px;
+        color: #64748b;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Clipboard insertion test page</h1>
+      <p class="lead">
+        Minimal fixture used by the automated tests to verify insertion into a single-line input, a textarea and a
+        contenteditable element. It is not part of the Lumen Foundation application.
+      </p>
+
+      <div class="field">
+        <label for="single-input">Single-line input</label>
+        <input id="single-input" name="single" type="text" />
+      </div>
+
+      <div class="field">
+        <label for="multi-textarea">Multi-line textarea</label>
+        <textarea id="multi-textarea" name="notes" rows="5"></textarea>
+      </div>
+
+      <div class="field">
+        <label id="editor-label">Rich text area (contenteditable)</label>
+        <div
+          id="rich-editor"
+          class="editor"
+          contenteditable="true"
+          role="textbox"
+          aria-multiline="true"
+          aria-labelledby="editor-label"
+        ></div>
+      </div>
+
+      <p class="note">Programmatic insertion should work even when clipboard events are blocked.</p>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,24 @@
+LOAD THE EXTENSION FROM THE  dist  FOLDER
+=========================================
+
+In Chrome:  chrome://extensions  ->  Developer mode ON  ->  Load unpacked
+Select:     D:\extension\clipboard-assistant-project\extension\dist
+
+Do NOT select the "extension" folder itself: manifest.json is not there, because the
+source must be built first.
+
+If the build output is missing, create it with:
+
+    cd D:\extension\clipboard-assistant-project\extension
+    npm install
+    npm run build
+
+The dist folder must contain at least:
+
+    manifest.json
+    background.js
+    content.js
+    popup.html
+    offscreen.html
+    icons\
+    assets\

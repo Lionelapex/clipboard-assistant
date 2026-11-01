@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edge-case fields</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 32px 18px;
+        background: #f1f5f9;
+        color: #0f172a;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      main { max-width: 720px; margin: 0 auto; }
+      h1 { font-size: 21px; margin: 0 0 4px; }
+      .lede { color: #64748b; font-size: 13px; margin: 0 0 18px; }
+      section {
+        background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+        padding: 16px 18px; margin-bottom: 14px;
+      }
+      h2 { font-size: 14px; margin: 0 0 4px; }
+      p.hint { margin: 0 0 10px; font-size: 12px; color: #64748b; }
+      label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: #334155; }
+      input, textarea, .editor {
+        width: 100%; box-sizing: border-box; padding: 8px 10px;
+        border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; font-size: 14px; line-height: 1.55;
+      }
+      .editor { min-height: 90px; }
+      textarea { resize: vertical; }
+      input[readonly] { background: #f8fafc; color: #64748b; }
+      textarea:disabled, input:disabled { background: #f1f5f9; color: #94a3b8; }
+      iframe { width: 100%; height: 150px; border: 1px solid #cbd5e1; border-radius: 6px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Edge-case field matrix</h1>
+      <p class="lede">
+        Length limits, read-only/disabled controls, numeric inputs, Unicode, plaintext-only editing, shadow DOM
+        and a same-origin iframe.
+      </p>
+
+      <section>
+        <h2>Character-limited field</h2>
+        <p class="hint">maxlength is 40 characters.</p>
+        <label for="limited">Limited field</label>
+        <textarea id="limited" name="limited" maxlength="40" rows="3" aria-label="Limited field"></textarea>
+        <p class="hint" data-testid="limited-count">0 / 40</p>
+      </section>
+
+      <section>
+        <h2>Unicode and paragraphs</h2>
+        <label for="unicode">Unicode field</label>
+        <textarea id="unicode" name="unicode" rows="4" aria-label="Unicode field"></textarea>
+      </section>
+
+      <section>
+        <h2>Read-only and disabled</h2>
+        <label for="readonly">Read-only field</label>
+        <input id="readonly" name="readonly" type="text" value="LOCKED" readonly aria-label="Read-only field" />
+        <label for="disabled" style="margin-top: 10px">Disabled field</label>
+        <textarea id="disabled" name="disabled" rows="2" disabled aria-label="Disabled field">disabled</textarea>
+      </section>
+
+      <section>
+        <h2>Numeric input</h2>
+        <label for="numeric">Amount</label>
+        <input id="numeric" name="numeric" type="number" aria-label="Amount" />
+      </section>
+
+      <section>
+        <h2>Plaintext-only editor</h2>
+        <div
+          id="plaintext"
+          class="editor"
+          contenteditable="plaintext-only"
+          role="textbox"
+          aria-label="Plain text editor"
+        ></div>
+      </section>
+
+      <section>
+        <h2>Shadow DOM field</h2>
+        <p class="hint">Custom element with an open shadow root.</p>
+        <shadow-notes></shadow-notes>
+      </section>
+
+      <section>
+        <h2>Multiple textareas</h2>
+        <textarea id="multi-1" rows="2" aria-label="Multiple one"></textarea>
+        <textarea id="multi-2" rows="2" aria-label="Multiple two" style="margin-top: 8px"></textarea>
+        <textarea id="multi-3" rows="2" aria-label="Multiple three" style="margin-top: 8px"></textarea>
+      </section>
+
+      <section>
+        <h2>Same-origin iframe</h2>
+        <p class="hint">Used to document the cross-frame limitation.</p>
+        <iframe src="/site-edge/frame.html" title="Frame with a text field"></iframe>
+      </section>
+    </main>
+
+    <script>
+      const limited = document.getElementById('limited');
+      const limitedCount = document.querySelector('[data-testid="limited-count"]');
+      limited.addEventListener('input', () => {
+        limitedCount.textContent = `${limited.value.length} / 40`;
+      });
+
+      class ShadowNotes extends HTMLElement {
+        connectedCallback() {
+          const root = this.attachShadow({ mode: 'open' });
+          root.innerHTML = `
+            <style>
+              label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: #334155; }
+              input, textarea {
+                width: 100%; box-sizing: border-box; padding: 8px 10px;
+                border: 1px solid #cbd5e1; border-radius: 6px;
+                font-family: system-ui, sans-serif; font-size: 14px;
+              }
+              textarea { margin-top: 8px; resize: vertical; }
+            </style>
+            <label for="shadow-input">Shadow field</label>
+            <input id="shadow-input" aria-label="Shadow field" />
+            <label for="shadow-textarea" style="margin-top: 8px">Shadow notes</label>
+            <textarea id="shadow-textarea" rows="2" aria-label="Shadow notes"></textarea>
+          `;
+        }
+      }
+
+      customElements.define('shadow-notes', ShadowNotes);
+    </script>
+  </body>
+</html>

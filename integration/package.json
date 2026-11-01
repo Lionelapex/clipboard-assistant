@@ -1,0 +1,18 @@
+{
+  "name": "clipboard-assistant-integration",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Playwright integration tests for the Clipboard Assistant and the mock form",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.2",
+    "@types/node": "^22.9.0",
+    "typescript": "^5.6.3",
+    "vue": "^3.5.44"
+  }
+}

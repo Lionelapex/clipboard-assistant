@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Typing-only fields fixture</title>
+    <style>
+      body { font: 15px/1.5 system-ui, sans-serif; margin: 0; padding: 32px; background: #f8fafc; color: #0f172a; }
+      main { max-width: 720px; margin: 0 auto; display: grid; gap: 18px; }
+      section { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; }
+      h1 { font-size: 20px; margin: 0 0 8px; }
+      h2 { font-size: 15px; margin: 0 0 4px; }
+      p { margin: 0 0 10px; color: #475569; font-size: 13px; }
+      input, textarea { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 8px; padding: 9px 11px; font: inherit; }
+      .fake { min-height: 42px; border: 1px dashed #94a3b8; border-radius: 8px; padding: 9px 11px; font-family: ui-monospace, monospace; color: #64748b; }
+      .count { font-size: 12px; color: #b91c1c; }
+      iframe { width: 100%; height: 96px; border: 1px solid #cbd5e1; border-radius: 8px; }
+      #log { font: 12px/1.4 ui-monospace, monospace; color: #334155; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Typing-only fields</h1>
+      <p>Local reproduction of the Allow Copy + “Boss level” checks. Paste is cancelled; bulk value changes are reverted.</p>
+
+      <section>
+        <h2>A field that wants real typing</h2>
+        <p>Any <code>input</code> event that adds more than two characters at once is undone.</p>
+        <input id="typing" placeholder="Typing only" autocomplete="off" />
+        <p class="count">Refused <span id="refused">0</span> time(s)</p>
+      </section>
+
+      <section>
+        <h2>Phone number with a mask</h2>
+        <p>Digits are only accepted through <code>keydown</code>; the value is rendered from script state.</p>
+        <input id="phone" placeholder="+1 (___) ___-____" autocomplete="off" inputmode="tel" />
+      </section>
+
+      <section>
+        <h2>A fake field</h2>
+        <p>It only looks editable: letters are drawn by a script and untrusted key events are refused.</p>
+        <div id="fake" class="fake" role="textbox" tabindex="0">Click and type</div>
+      </section>
+
+      <section>
+        <h2>Embedded widget</h2>
+        <p>A real textarea inside a same-origin iframe that cancels paste.</p>
+        <iframe src="frame.html" title="Embedded widget"></iframe>
+      </section>
+
+      <section>
+        <h2>Event log</h2>
+        <div id="log">ready</div>
+      </section>
+    </main>
+
+    <script>
+      const logEl = document.getElementById('log');
+      const log = (line) => {
+        const time = new Date().toLocaleTimeString();
+        logEl.textContent = `${time} ${line}\n${logEl.textContent}`.split('\n').slice(0, 12).join('\n');
+      };
+
+      // 1. Bulk-change guard: a single input event may add at most two characters.
+      const typing = document.getElementById('typing');
+      const refusedEl = document.getElementById('refused');
+      let baseline = typing.value;
+      let refused = 0;
+      typing.addEventListener('paste', (event) => {
+        event.preventDefault();
+        refused += 1;
+        refusedEl.textContent = String(refused);
+        log('typing: paste cancelled');
+      });
+      typing.addEventListener('input', () => {
+        if (typing.value.length - baseline.length > 2) {
+          typing.value = baseline;
+          refused += 1;
+          refusedEl.textContent = String(refused);
+          log('typing: bulk change reverted');
+          return;
+        }
+        baseline = typing.value;
+      });
+
+      // 2. Masked phone: value comes from script state, digits arrive via keydown.
+      const phone = document.getElementById('phone');
+      let digits = '';
+      const renderPhone = () => {
+        if (!digits) {
+          phone.value = '';
+          return;
+        }
+        const padded = digits.padEnd(10, '_');
+        phone.value = `+1 (${padded.slice(0, 3)}) ${padded.slice(3, 6)}-${padded.slice(6, 10)}`;
+      };
+      phone.addEventListener('keydown', (event) => {
+        if (event.ctrlKey || event.metaKey) return;
+        if (event.key === 'Backspace') {
+          event.preventDefault();
+          digits = digits.slice(0, -1);
+          renderPhone();
+          return;
+        }
+        if (event.key.length !== 1) return;
+        event.preventDefault();
+        if (!/^[0-9]$/.test(event.key)) {
+          log('phone: non-digit refused');
+          return;
+        }
+        digits = (digits + event.key).slice(0, 10);
+        renderPhone();
+      });
+      phone.addEventListener('input', () => {
+        // A programmatic value change is not reflected in the script's own state.
+        renderPhone();
+      });
+
+      // 3. Fake field: draws characters, refuses untrusted key events.
+      const fake = document.getElementById('fake');
+      let fakeText = '';
+      fake.addEventListener('keydown', (event) => {
+        if (!event.isTrusted) {
+          log('fake: untrusted key refused');
+          return;
+        }
+        if (event.key.length === 1) {
+          event.preventDefault();
+          fakeText += event.key;
+          fake.textContent = fakeText;
+        }
+      });
+      fake.addEventListener('click', () => fake.focus());
+    </script>
+  </body>
+</html>

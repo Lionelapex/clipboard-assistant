@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Reset inherited page styles at the shadow boundary. */
+:host {
+  all: initial;
+}
+
+.ca-root {
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #0f172a;
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.ca-root button {
+  font-family: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.ca-root .ca-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.ca-root .ca-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.ca-root .ca-scroll::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.ca-root .ca-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}

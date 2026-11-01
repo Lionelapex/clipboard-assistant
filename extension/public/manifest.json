@@ -1,0 +1,55 @@
+{
+  "manifest_version": 3,
+  "name": "Clipboard Assistant",
+  "version": "1.4.0",
+  "description": "Read clipboard text, keep a local history and paste it into any text field on the page.",
+  "minimum_chrome_version": "116",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Clipboard Assistant",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "permissions": ["storage", "clipboardRead", "clipboardWrite", "offscreen", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "commands": {
+    "toggle-panel": {
+      "suggested_key": {
+        "default": "Alt+Shift+V"
+      },
+      "description": "Show or hide the Clipboard Assistant panel"
+    },
+    "capture-selection": {
+      "suggested_key": {
+        "default": "Alt+Shift+C"
+      },
+      "description": "Capture the selected text into the Clipboard Assistant"
+    },
+    "insert-current": {
+      "suggested_key": {
+        "default": "Alt+Shift+P"
+      },
+      "description": "Paste the stored snippet into the last focused field"
+    }
+  }
+}

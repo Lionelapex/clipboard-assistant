@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Northwind Support — contact form</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 40px 20px;
+        background: #f4f6f8;
+        color: #1f2933;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      main {
+        max-width: 640px;
+        margin: 0 auto;
+        background: #fff;
+        border: 1px solid #dde3e9;
+        border-radius: 10px;
+        padding: 28px;
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-size: 22px;
+      }
+      .lede {
+        margin: 0 0 24px;
+        color: #627d98;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .field {
+        margin-bottom: 18px;
+      }
+      label,
+      .label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #334e68;
+      }
+      input,
+      textarea,
+      .editor {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #bcccdc;
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-family: inherit;
+        font-size: 14px;
+        line-height: 1.55;
+        background: #fff;
+      }
+      .editor {
+        min-height: 96px;
+      }
+      textarea {
+        resize: vertical;
+      }
+      input[readonly] {
+        background: #f0f4f8;
+        color: #627d98;
+      }
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 8px;
+      }
+      button {
+        border: 0;
+        border-radius: 6px;
+        background: #243b53;
+        color: #fff;
+        padding: 8px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      #field-count {
+        font-size: 12px;
+        color: #829ab1;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Contact Northwind Support</h1>
+      <p class="lede">
+        Plain HTML, CSS and JavaScript — no framework and no knowledge of the Clipboard Assistant. Fields can be
+        added after the page has loaded.
+      </p>
+
+      <form id="contact" onsubmit="return false">
+        <div class="field">
+          <label for="full-name">Full name</label>
+          <input id="full-name" name="name" type="text" autocomplete="off" />
+        </div>
+
+        <div class="field">
+          <label for="notes">How can we help?</label>
+          <textarea id="notes" name="notes" rows="4"></textarea>
+        </div>
+
+        <div class="field">
+          <span id="rich-label" class="label">Additional details (rich text)</span>
+          <div
+            id="rich"
+            class="editor"
+            contenteditable="true"
+            role="textbox"
+            aria-multiline="true"
+            aria-labelledby="rich-label"
+          ></div>
+        </div>
+
+        <div class="field">
+          <label for="locked">Reference (read-only)</label>
+          <input id="locked" name="reference" type="text" value="REF-1024" readonly />
+        </div>
+
+        <div class="actions">
+          <button type="button" id="add-field">Add another field</button>
+          <span id="field-count" data-testid="field-count">4 fields</span>
+        </div>
+
+        <div id="dynamic-fields"></div>
+      </form>
+    </main>
+
+    <script>
+      const container = document.getElementById('dynamic-fields');
+      const counter = document.getElementById('field-count');
+      let added = 0;
+
+      document.getElementById('add-field').addEventListener('click', () => {
+        added += 1;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'field';
+
+        const label = document.createElement('label');
+        label.textContent = `Extra detail ${added}`;
+        label.htmlFor = `extra-${added}`;
+
+        const area = document.createElement('textarea');
+        area.id = `extra-${added}`;
+        area.name = `extra-${added}`;
+        area.rows = 3;
+        area.setAttribute('aria-label', `Extra detail ${added}`);
+        area.dataset.testid = `extra-${added}`;
+
+        wrapper.append(label, area);
+        container.appendChild(wrapper);
+        counter.textContent = `${4 + added} fields`;
+      });
+    </script>
+  </body>
+</html>

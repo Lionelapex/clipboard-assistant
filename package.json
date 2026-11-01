@@ -1,0 +1,16 @@
+{
+  "name": "clipboard-assistant-project",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Clipboard Assistant Chromium extension plus a locally hosted mock application form used to evaluate it",
+  "scripts": {
+    "install:all": "npm --prefix extension install && npm --prefix mock-website install && npm --prefix integration install",
+    "dev:mock": "npm --prefix mock-website run dev",
+    "build:extension": "npm --prefix extension run build",
+    "build:mock": "npm --prefix mock-website run build",
+    "build": "npm run build:extension && npm run build:mock",
+    "typecheck": "npm --prefix extension run typecheck && npm --prefix mock-website run typecheck",
+    "test": "npm --prefix integration test",
+    "screenshots": "cd integration && node scripts/screenshots.mjs"
+  }
+}

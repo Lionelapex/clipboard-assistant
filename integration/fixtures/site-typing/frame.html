@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Embedded widget</title>
+    <style>
+      body { font: 13px/1.4 system-ui, sans-serif; margin: 0; padding: 8px; background: #fff; }
+      textarea { width: 100%; box-sizing: border-box; height: 64px; font: 13px/1.4 ui-monospace, monospace; }
+    </style>
+  </head>
+  <body>
+    <textarea id="frame-field" aria-label="Frame field" placeholder="Embedded answer"></textarea>
+    <script>
+      const field = document.getElementById('frame-field');
+      field.addEventListener('paste', (event) => event.preventDefault());
+      field.addEventListener('keydown', (event) => {
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') event.preventDefault();
+      });
+    </script>
+  </body>
+</html>
