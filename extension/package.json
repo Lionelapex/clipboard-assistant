@@ -1,7 +1,7 @@
 {
   "name": "clipboard-assistant-extension",
   "private": true,
-  "version": "1.4.0",
+  "version": "1.4.1",
   "type": "module",
   "description": "Floating clipboard assistant Chrome extension (Manifest V3)",
   "scripts": {

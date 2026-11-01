@@ -91,7 +91,7 @@ export function FloatingPanel({ origin }: FloatingPanelProps) {
     setStatus({
       kind: 'info',
       text: `Clipboard updated · ${formatNumber(text.length)} characters`,
-      detail: 'Picked up automatically — no refresh needed.',
+      detail: 'Picked up automatically. No refresh needed.',
     });
   }, []);
 
@@ -377,7 +377,7 @@ export function FloatingPanel({ origin }: FloatingPanelProps) {
       setStatus({
         kind: 'error',
         text: 'No active field.',
-        detail: 'Click into a text area on the page first — the panel remembers the last field you focused.',
+        detail: 'Click into a text area on the page first. The panel remembers the last field you focused.',
       });
       return;
     }

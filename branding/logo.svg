@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Clipboard Assistant logo">
+  <title>Clipboard Assistant</title>
+  <rect width="512" height="512" rx="116" fill="#0F766E"/>
+  <rect x="112" y="104" width="288" height="328" rx="42" fill="#FFFFFF"/>
+  <rect x="196" y="70" width="120" height="68" rx="26" fill="#0B3B38"/>
+  <rect x="214" y="86" width="84" height="34" rx="14" fill="#FFFFFF"/>
+  <rect x="234" y="188" width="44" height="86" rx="14" fill="#0F766E"/>
+  <path d="M188 268h136l-68 68z" fill="#0F766E"/>
+</svg>

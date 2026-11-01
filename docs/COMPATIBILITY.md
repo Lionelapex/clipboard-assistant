@@ -50,7 +50,7 @@ The suite drives the real extension through every editable control on that page
 | Field | Level | Result |
 | --- | --- | --- |
 | "Confirm your email", password, card number, "Paste here" | 1 Easy | pasted + verified |
-| Chat/comment box, blog editor (tiptap/ProseMirror), online coding test | 2–3 | pasted + verified (`exec-command`) |
+| Chat/comment box, blog editor (tiptap/ProseMirror), online coding test | 2 to 3 | pasted + verified (`exec-command`) |
 | Same-origin embedded widget (iframe textarea) | 3 Hard | pasted + verified (frame bridge) |
 | **"A field that wants real typing"** | 4 Boss | **typed character by character, verified** |
 | **"Phone number with a mask"** | 4 Boss | **typed via keydown, masked value verified** |
@@ -58,7 +58,7 @@ The suite drives the real extension through every editable control on that page
 
 The trap is the fake field: it is a `<div role="textbox">` that paints each letter itself and
 rejects `keydown` events whose `isTrusted` is false. There is no editable value to write, so no
-extension — this one included — can fill it. The page says as much in its own copy.
+extension, this one included, can fill it. The page says as much in its own copy.
 
 Filling both Type-it cards with the page's own samples unlocks the site's boss reward; the live test
 asserts the **“You beat the boss level!”** banner and its GIF appear. The fake field is deliberately
@@ -79,7 +79,7 @@ Source: the six mechanisms listed on `allowcopy.com/tools/allow-copy/`, reproduc
 | 4 | Clipboard events that replace the clipboard with promotional text | not simulated locally | clipboard may be overwritten, field unchanged | insertion never reads or writes the clipboard | no effect by design |
 | 5 | Transparent overlay over the text | `#overlaid-text` | pointer selection blocked | not applicable (no field) | documented |
 | 6 | Keyboard traps on `Ctrl+C`, `Ctrl+V`, `Ctrl+X`, `F12` | `#key-trapped` | value unchanged, no `paste` event fired at all | insertion still lands and verifies | **pass** |
-| 7 | Text served as an image / scrambled font | — | nothing to select as text | cannot help: there is no text node to read | **not possible** |
+| 7 | Text served as an image / scrambled font | n/a | nothing to select as text | cannot help: there is no text node to read | **not possible** |
 | 8 | Bulk-change guard: any `input` event that adds more than 2 characters is reverted | `site-typing` `#typing` | a normal paste is undone | paste retried character by character, each event one character | **pass** |
 | 9 | Masked field driven by `keydown` only (`preventDefault` + state) | `site-typing` `#phone` | typed digits format; paste does nothing | keydown dispatched per character; the page's own handler formats | **pass** |
 | 10 | Fake field: `<div role="textbox">` that draws letters and rejects untrusted keys | `site-typing` `#fake` | typing does nothing | refused with a precise reason; nothing is written | **not possible** |
@@ -88,7 +88,7 @@ Observed details worth keeping:
 
 - The keyboard-trap case proves why "paste via clipboard" cannot be the only strategy: the trap
   cancels `keydown`, so no `paste` event exists to intercept. The extension never synthesises
-  clipboard events — it writes to the field and dispatches the input event the framework listens for.
+  clipboard events; it writes to the field and dispatches the input event the framework listens for.
 - The cancelled-copy case is asymmetric: `Ctrl+C` on the page leaves the system clipboard untouched
   (`BASELINE` stayed `BASELINE`), but the capture shortcut still stores the selection because it
   reads the DOM selection rather than the system clipboard.
@@ -115,7 +115,7 @@ success toast appeared.
 | 9 | Multiple textareas | `site-edge` `#multi-1` / `#multi-2` | **pass** | independent values |
 | 10 | Open shadow DOM field | `site-edge` `<shadow-notes>` | **pass** | focus tracking descends into open shadow roots |
 | 11 | Field inside a same-origin iframe | `site-edge` `frame.html` | **pass** | frame bridge attaches focus listeners inside same-origin frames |
-| 12 | Field inside a cross-origin iframe | — | **not supported** | browsers isolate the document; reported as "No field selected" |
+| 12 | Field inside a cross-origin iframe | n/a | **not supported** | browsers isolate the document; reported as "No field selected" |
 | 13 | React 18 controlled textarea | `site-react` | **pass** | state/counter update |
 | 14 | React field created after load | `site-plain` / `site-react` | **pass** | |
 | 15 | Plain HTML input / textarea / contenteditable | `site-plain` | **pass** | |
@@ -126,7 +126,7 @@ success toast appeared.
 | 20 | Caret-position insertion | mock site | **pass** | `AAA BBB` + caret 4 + `XXX ` → `AAA XXX BBB` |
 | 21 | ~9,000-character snippet | mock site | **pass** | exact value match |
 | 22 | Six-section professional form | mock site | **pass** | counters, completion badges, progress sidebar update |
-| 23 | Mock site configs A–E | mock site | **pass** | copy/paste/cut blocked exactly as configured; typing unaffected |
+| 23 | Mock site configs A to E | mock site | **pass** | copy/paste/cut blocked exactly as configured; typing unaffected |
 
 ---
 
@@ -146,7 +146,7 @@ system clipboard:
   (capture, history selection) wrote something newer while the read was in flight.
 - Empty clipboard reads are ignored, so clearing the clipboard never wipes the preview.
 
-Automated coverage: `tests/auto-refresh.spec.ts` (4 tests) — first copy after opening, second copy
+Automated coverage: `tests/auto-refresh.spec.ts` (4 tests): first copy after opening, second copy
 while open, popup parity, and the capture-vs-stale-clipboard race.
 
 ---
@@ -213,6 +213,6 @@ not just the absence of a success message.
   content scripts.
 - **`Ctrl+V` interception.** A page keyboard trap can stop the browser's paste shortcut. The
   extension's insertion path does not depend on that shortcut, but it also does not try to defeat
-  the trap — it writes to the field through the DOM and dispatches the event frameworks listen for.
+  the trap; it writes to the field through the DOM and dispatches the event frameworks listen for.
 - **No stealth.** Nothing here disguises clipboard operations or tries to evade a third party's
   security checks; the extension only writes into fields the user has focused.

@@ -98,7 +98,7 @@ export function PopupApp() {
     setStatus({
       kind: 'info',
       text: `Clipboard updated · ${formatNumber(text.length)} characters`,
-      detail: 'Picked up automatically — no refresh needed.',
+      detail: 'Picked up automatically. No refresh needed.',
     });
   }, []);
 
@@ -508,7 +508,7 @@ export function PopupApp() {
       </div>
 
       <footer className="border-t border-slate-100 bg-slate-50/70 px-3 py-2 text-[10px] leading-relaxed text-slate-400">
-        Paste inserts into the field you last clicked — on any page the extension can access. Clipboard data never
+        Paste inserts into the field you last clicked, on any page the extension can access. Clipboard data never
         leaves this browser.
       </footer>
     </div>

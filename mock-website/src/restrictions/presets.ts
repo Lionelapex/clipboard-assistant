@@ -46,7 +46,7 @@ export const PRESETS: Preset[] = [
     id: 'E',
     name: 'Combined restrictions',
     summary: 'Copy + paste + cut blocked',
-    description: 'Copy, paste and cut events are all intercepted and cancelled — the site default.',
+    description: 'Copy, paste and cut events are all intercepted and cancelled (site default).',
     settings: { copy: true, paste: true, cut: true },
   },
 ];

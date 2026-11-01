@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Clipboard Assistant",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Read clipboard text, keep a local history and paste it into any text field on the page.",
   "minimum_chrome_version": "116",
   "icons": {

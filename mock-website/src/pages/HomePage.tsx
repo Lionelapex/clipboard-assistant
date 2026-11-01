@@ -10,7 +10,7 @@ import { useRestrictions } from '../restrictions/RestrictionContext';
 const INSTRUCTIONS = [
   'Complete all six sections. Each has a minimum length; the counter and indicator show when a section is complete.',
   'Write in plain English. We assess clarity, realism and fit with the fund, not jargon.',
-  'You can review and edit any answer before submitting — nothing is sent until you press Submit application.',
+  'You can review and edit any answer before submitting. Nothing is sent until you press Submit application.',
   'If you need this form in an alternative format, contact the grants team before the deadline.',
 ];
 
@@ -129,7 +129,7 @@ export function HomePage() {
                 </nav>
 
                 <h1 className="mt-3 max-w-2xl font-serif text-[30px] leading-[1.15] text-brand-700 sm:text-[38px]">
-                  Community Impact Grant — Stage 1 application
+                  Community Impact Grant, Stage 1 application
                 </h1>
 
                 <p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed text-slate-600">
