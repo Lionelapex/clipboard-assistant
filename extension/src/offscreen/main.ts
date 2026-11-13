@@ -8,6 +8,8 @@
  * Both flavours are captured: plain text from a textarea paste, and rich HTML from a
  * contenteditable paste, so headings, bold text and lists survive the round trip.
  */
+import { htmlToPlainText } from '../lib/html-text';
+
 interface OffscreenRequest {
   target?: string;
   type?: string;
@@ -18,15 +20,6 @@ interface OffscreenRequest {
 interface ClipboardPayload {
   text: string;
   html: string | null;
-}
-
-/** Turns an HTML fragment into readable text with paragraph breaks. */
-function htmlToText(html: string): string {
-  const container = document.createElement('div');
-  container.innerHTML = html
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/(p|div|li|h[1-6]|tr|blockquote|pre)>/gi, '\n');
-  return (container.textContent ?? '').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 function pasteIntoTextarea(): string {
@@ -100,7 +93,7 @@ async function readViaClipboardApi(): Promise<ClipboardPayload | null> {
         text = await (await item.getType('text/plain')).text();
       }
     }
-    if (!text && html) text = htmlToText(html);
+    if (!text && html) text = htmlToPlainText(html);
     if (!text && !html) return null;
     return { text, html };
   } catch {
@@ -132,7 +125,7 @@ async function readClipboard(): Promise<ClipboardPayload> {
   const text = pasteIntoTextarea();
   const html = pasteIntoEditor();
   if (text || html) {
-    return { text: text || (html ? htmlToText(html) : ''), html };
+    return { text: text || (html ? htmlToPlainText(html) : ''), html };
   }
 
   const api = await withTimeout(readViaClipboardApi(), 1200);

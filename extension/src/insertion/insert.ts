@@ -9,6 +9,7 @@ import {
 import { buildResult, normalizeText, readFieldValue, verifyText } from './verify';
 import { typeTextIntoField } from './typing';
 import { isRichHtml, sanitiseHtml } from './sanitise';
+import { containsTable, htmlToPlainText } from '../lib/html-text';
 
 export { normalizeText, readFieldValue, verifyText } from './verify';
 
@@ -22,7 +23,7 @@ function controlPrototype(el: HTMLInputElement | HTMLTextAreaElement): object {
   return isInputElement(el) ? view.HTMLInputElement.prototype : view.HTMLTextAreaElement.prototype;
 }
 
-function insertIntoInput(el: HTMLInputElement | HTMLTextAreaElement, text: string): InsertResult {
+function insertIntoInput(el: HTMLInputElement | HTMLTextAreaElement, text: string, note = ''): InsertResult {
   const startedAt = performance.now();
   const nativeSetter = Object.getOwnPropertyDescriptor(controlPrototype(el), 'value')?.set;
 
@@ -77,7 +78,14 @@ function insertIntoInput(el: HTMLInputElement | HTMLTextAreaElement, text: strin
     }),
   );
 
-  return buildResult(el, 'native-value-setter', payload, readFieldValue(el), startedAt, truncationNote);
+  return buildResult(
+    el,
+    'native-value-setter',
+    payload,
+    readFieldValue(el),
+    startedAt,
+    [note, truncationNote].filter(Boolean).join(' '),
+  );
 }
 
 function placeCaretAtEnd(el: HTMLElement): void {
@@ -126,7 +134,12 @@ function insertViaRange(el: HTMLElement, text: string): void {
   );
 }
 
-function insertIntoContentEditable(el: HTMLElement, text: string, html: string | null): InsertResult {
+function insertIntoContentEditable(
+  el: HTMLElement,
+  text: string,
+  html: string | null,
+  plainFallback: string = text,
+): InsertResult {
   const startedAt = performance.now();
   const doc = ownerDocument(el);
   el.focus({ preventScroll: true });
@@ -170,24 +183,24 @@ function insertIntoContentEditable(el: HTMLElement, text: string, html: string |
   let ok = false;
 
   try {
-    ok = doc.execCommand('insertText', false, text);
+    ok = doc.execCommand('insertText', false, plainFallback);
   } catch {
     ok = false;
   }
 
-  if (!ok || normalizeText(readFieldValue(el)).indexOf(normalizeText(text).slice(0, 12)) === -1) {
+  if (!ok || normalizeText(readFieldValue(el)).indexOf(normalizeText(plainFallback).slice(0, 12)) === -1) {
     strategy = 'range-insert';
-    insertViaRange(el, text);
+    insertViaRange(el, plainFallback);
   }
 
   const actual = readFieldValue(el);
-  const verification = verifyText(text, actual);
+  const verification = verifyText(plainFallback, actual);
 
   if (!ok && !verification.verified) {
-    return buildResult(el, 'none', text, actual, startedAt, 'The rich-text editor rejected the insertion.');
+    return buildResult(el, 'none', plainFallback, actual, startedAt, 'The rich-text editor rejected the insertion.');
   }
 
-  return buildResult(el, strategy, text, actual, startedAt);
+  return buildResult(el, strategy, plainFallback, actual, startedAt);
 }
 
 /**
@@ -232,14 +245,21 @@ export async function insertTextIntoField(
     };
   }
 
+  const tableText = html && containsTable(html) ? htmlToPlainText(html) : '';
+  const tableAsText = Boolean(tableText && tableText.includes('\t'));
+  const fieldText = tableAsText ? tableText : text;
+  const tableNote = tableAsText
+    ? 'The field cannot display a table, so its rows and columns were pasted as tab-separated text.'
+    : '';
+
   if (mode === 'type') {
-    return typeTextIntoField(el, text);
+    return typeTextIntoField(el, fieldText);
   }
 
   const before = readFieldValue(el);
   const pasted = isTextControl(el)
-    ? insertIntoInput(el, text)
-    : insertIntoContentEditable(el, text, html);
+    ? insertIntoInput(el, fieldText, tableNote)
+    : insertIntoContentEditable(el, text, html, fieldText);
 
   if (mode === 'paste' || pasted.verified) return pasted;
 
@@ -248,7 +268,7 @@ export async function insertTextIntoField(
   const after = readFieldValue(el);
   if (after !== before) return pasted;
 
-  const typed = await typeTextIntoField(el, text);
+  const typed = await typeTextIntoField(el, fieldText);
   if (typed.verified) {
     return {
       ...typed,

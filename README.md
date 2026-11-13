@@ -15,7 +15,7 @@ No account, no cloud, no analytics. Everything stays on your computer.
 [![Chrome](https://img.shields.io/badge/Chrome-supported-4285F4?logo=googlechrome&logoColor=white)](#install)
 [![Edge](https://img.shields.io/badge/Edge-supported-0C59A4?logo=microsoftedge&logoColor=white)](#install)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-3DDC84)](#technical-details)
-[![Version](https://img.shields.io/badge/version-1.5.0-black)](https://github.com/Lionelapex/clipboard-assistant/releases)
+[![Version](https://img.shields.io/badge/version-1.6.0-black)](https://github.com/Lionelapex/clipboard-assistant/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Local only](https://img.shields.io/badge/data-stays%20local-brightgreen)](#privacy)
 [![Tests](https://github.com/Lionelapex/clipboard-assistant/actions/workflows/tests.yml/badge.svg)](https://github.com/Lionelapex/clipboard-assistant/actions/workflows/tests.yml)
@@ -29,6 +29,7 @@ No account, no cloud, no analytics. Everything stays on your computer.
   - [How to use it](#how-to-use-it)
   - [It updates itself](#it-updates-itself)
   - [Formatting and size](#formatting-and-size)
+  - [Tables from Word](#tables-from-word)
   - [When a site only accepts typing](#when-a-site-only-accepts-typing)
   - [Your clipboard history](#your-clipboard-history)
   - [Privacy](#privacy)
@@ -89,7 +90,7 @@ simply a clipboard manager for Chrome and Edge.
 The extension is not in the Chrome Web Store, so you install it yourself. It takes about a minute:
 
 1. Open the [latest release](https://github.com/Lionelapex/clipboard-assistant/releases) and download
-   **`clipboard-assistant-1.5.0.zip`**.
+   **`clipboard-assistant-1.6.0.zip`**.
 2. **Unzip it.** You should see `manifest.json` inside the folder.
 3. Open `chrome://extensions` (or `edge://extensions` in Edge) and turn on **Developer mode**.
 4. Click **Load unpacked** and choose the unzipped folder.
@@ -138,6 +139,21 @@ they receive the same words as clean text.
 
 Pasted markup is cleaned before it reaches the page. Scripts, event handlers and `javascript:` links
 are removed, so a copied web page cannot inject code through the assistant.
+
+## Tables from Word
+
+A table copied from Word, Excel or a web page arrives as a real table in a rich text editor: the
+same rows and columns, merged cells, header shading, column proportions, alignment and borders. Word
+hides most of that in private markup, so the assistant translates the safe parts into plain table
+markup that every editor understands.
+
+In a plain textarea or input, where a table cannot exist, the same content is pasted as
+tab-separated rows. One line per row and one tab per column means the data keeps its shape, and it
+drops into a spreadsheet as separate cells instead of one long line.
+
+Borderless tables stay borderless, and a borderless cell inside a bordered table, such as the narrow
+spacer column in a two-part answer grid, stays open. Wide tables are capped at the width of the field
+so they cannot push a page sideways.
 
 ## When a site only accepts typing
 
@@ -213,7 +229,7 @@ message is never shown unless the value really changed.
 | Verification | Read-back comparison, whitespace normalised, with an alphanumeric fallback for masked inputs |
 | Focus tracking | Last-focused field (not `document.activeElement`), shadow-DOM aware and same-origin frame aware |
 | Storage | `chrome.storage.local`: history capped at 10 with text and HTML, current snippet, panel state, clipboard fingerprint |
-| Tests | Playwright against the installed Chrome (no downloaded browser): 52 deterministic tests plus 2 opt-in live checks |
+| Tests | Playwright against the installed Chrome (no downloaded browser): 57 deterministic tests plus 2 opt-in live checks |
 | Test site | A local "Lumen Foundation" grant application with configurable copy, paste and cut restrictions (A to E) |
 
 ## Repository layout
@@ -294,6 +310,11 @@ and a captured selection surviving a stale clipboard read.
 in a rich editor; script tags and event handlers are stripped before insertion; a 50,000 character
 paste arrives complete; and the capture shortcut stores formatted selection markup.
 
+`tests/tables.spec.ts` (5 tests): a Word-shaped table keeps its rows, header shading, colspan,
+proportions and alignment in a rich editor; the same table becomes tab-separated rows in a textarea;
+a borderless table stays borderless; a borderless spacer cell stays open inside a bordered table; and
+the capture shortcut keeps a selected table.
+
 `tests/allowcopy-live.spec.ts` and `tests/allowcopyplus-live.spec.ts` (opt-in): real sites. Content
 injection and capture on allowcopy.com, and every editable control on the Allow Copy + playground,
 including its Boss level (typing-only, masked phone, fake field) and embedded iframe widget.
@@ -333,7 +354,7 @@ snippet immediately before writing, so a capture or history selection that lands
 ## Continuous integration
 
 `.github/workflows/tests.yml` runs on every push and pull request. It installs the three packages,
-builds the extension, and runs the 52 deterministic Playwright tests on a Windows runner using the
+builds the extension, and runs the 57 deterministic Playwright tests on a Windows runner using the
 Chrome that is already installed there. The two live checks stay opt-in because they depend on public
 websites.
 
@@ -360,6 +381,8 @@ technical message, never a fake allowlist error.
 | React 18 controlled fields, Vue 3 `v-model`, dynamic fields | pass, with state and counters updated |
 | `maxlength`, Unicode, emoji, paragraphs, caret position | pass, read-back verified |
 | Rich text (heading, bold, italic, links, lists) into a contenteditable editor | pass, structure kept |
+| Word table (merged cells, header shading, borders, column widths) into a rich editor | pass, table kept |
+| Table into a textarea or input | pass as tab-separated rows, because the field cannot hold a table |
 | 50,000 character paste into a textarea | pass, nothing truncated by the extension |
 | Read-only, disabled, `type="number"`, removed field | refused with a specific reason |
 | Shadow DOM (web components) | pass |
@@ -386,7 +409,8 @@ Rebind them at `chrome://extensions/shortcuts` (Edge: `edge://extensions/shortcu
   command. A field that demands trusted key events (not just a trusted edit) would need the `debugger`
   API, which brings a visible debugging banner and is deliberately not used.
 - **Plain fields cannot show formatting.** An `input` or `textarea` stores text only, so headings and
-  bold arrive as plain words. Rich structure needs a contenteditable or rich text editor.
+  bold arrive as plain words, and a table arrives as tab-separated rows. Rich structure needs a
+  contenteditable or rich text editor.
 - **A form's own `maxlength` still applies.** The extension does not bypass a destination's validation
   rule, and a field that wants 500 characters will keep 500.
 - **Very large text in a typing-only field is slow.** Typing is character by character by definition;
@@ -429,6 +453,10 @@ Rebind them at `chrome://extensions/shortcuts` (Edge: `edge://extensions/shortcu
 | --- |
 | ![Boss level completed](integration/screenshots/live-allowcopyplus.png) |
 
+| Word table pasted with its header shading, borders and merged row |
+| --- |
+| ![Table pasted into a rich editor](integration/screenshots/table-paste.png) |
+
 ## The mock website
 
 The separate `mock-website/` app is a normal-looking "Lumen Foundation" grant application: six answer
@@ -459,11 +487,14 @@ as long as the copyright notice is kept.
 
 ## Project status
 
+- **Version 1.6.0**: Word and Excel tables keep their rows, merged cells, header shading, borders,
+  column proportions, alignment and text colour; borderless cells and spacer columns stay open; plain
+  fields receive the same table as tab-separated rows.
 - **Version 1.5.0**: rich text pastes (headings, bold, lists) through sanitised `insertHTML`, HTML
   capture for the selection shortcut, no app-side character or word limit, `unlimitedStorage`, and the
   GitHub Actions test workflow.
 - **Version 1.4.1**: new logo and icon set, MIT license, two-tier README.
-- Verified on Windows 11 with Google Chrome 156: 52 deterministic tests passing, plus live checks
+- Verified on Windows 11 with Google Chrome 156: 57 deterministic tests passing, plus live checks
   against allowcopy.com and the Allow Copy + playground (every real field filled, boss level completed,
   fake field refused).
 - Built by [Lionel Chapasuka (@Lionelapex)](https://github.com/Lionelapex). Issues and suggestions are

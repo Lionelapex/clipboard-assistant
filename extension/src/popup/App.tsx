@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ContentContext, ContentInsertResponse, HistoryEntry } from '../types';
 import { readClipboardText, writeClipboardContent } from '../clipboard/read';
 import { isRichHtml } from '../insertion/sanitise';
+import { containsTable } from '../lib/html-text';
 import {
   addHistory,
   CLIPBOARD_SEEN_KEY,
@@ -442,7 +443,11 @@ export function PopupApp() {
             <h2 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Clipboard</h2>
             <span className="text-[10px] text-slate-400">
               {preview ? `${formatNumber(preview.length)} characters` : 'empty'}
-              {previewHtml && isRichHtml(previewHtml) ? ' · formatted' : ''}
+              {previewHtml && containsTable(previewHtml)
+                ? ' · table'
+                : previewHtml && isRichHtml(previewHtml)
+                  ? ' · formatted'
+                  : ''}
               {via ? ` · ${via}` : ''}
             </span>
           </div>

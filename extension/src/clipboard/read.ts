@@ -1,4 +1,5 @@
 import type { ClipboardReadResult } from '../types';
+import { htmlToPlainText } from '../lib/html-text';
 
 export class ClipboardAccessError extends Error {
   readonly reason: 'empty' | 'denied' | 'unavailable' | 'unknown';
@@ -33,11 +34,7 @@ async function readViaBackground(): Promise<ClipboardReadResult> {
 }
 
 function htmlToText(html: string): string {
-  const container = document.createElement('div');
-  container.innerHTML = html
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/(p|div|li|h[1-6]|tr|blockquote|pre)>/gi, '\n');
-  return (container.textContent ?? '').replace(/\n{3,}/g, '\n\n').trim();
+  return htmlToPlainText(html);
 }
 
 async function readViaNavigator(): Promise<ClipboardReadResult> {

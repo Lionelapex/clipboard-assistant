@@ -19,6 +19,7 @@ import {
 } from '../storage';
 import { describeField, getActiveField, insertTextIntoField, type InsertMode } from '../insertion';
 import { isRichHtml } from '../insertion/sanitise';
+import { containsTable } from '../lib/html-text';
 import { formatNumber } from '../lib/format';
 import { cn } from '../lib/cn';
 import { ActionButton } from '../components/ActionButton';
@@ -625,7 +626,11 @@ export function FloatingPanel({ origin }: FloatingPanelProps) {
             <h2 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Clipboard</h2>
             <span className="text-[10px] text-slate-400">
               {preview ? `${formatNumber(preview.length)} characters` : 'empty'}
-              {previewHtml && isRichHtml(previewHtml) ? ' · formatted' : ''}
+              {previewHtml && containsTable(previewHtml)
+                ? ' · table'
+                : previewHtml && isRichHtml(previewHtml)
+                  ? ' · formatted'
+                  : ''}
               {clipboardVia ? ` · ${clipboardVia}` : ''}
             </span>
           </div>

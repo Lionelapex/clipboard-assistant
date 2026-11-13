@@ -206,14 +206,19 @@ not just the absence of a success message.
 | --- | --- |
 | Clipboard carrying `text/html` | read by the offscreen document (contenteditable paste); HTML kept beside plain text |
 | Heading, bold, italic, link, list into contenteditable | pass, structure kept through sanitised `insertHTML` |
+| Word table into contenteditable | pass, rows, merged cells, header shading, borders, column proportions, alignment and text colour kept |
+| Word table into textarea or input | pass as tab-separated rows, one line per row and one tab per column |
+| Borderless table | stays borderless |
+| Table with `border=1` or cell border styles | renders with a 1px grid |
 | 50,000 characters into a textarea | pass, full length verified |
 | `maxlength="24"` on the destination | field keeps 24 characters by its own rule; reported as truncated |
 | Script tag, `onerror` attribute, `javascript:` URL | removed before insertion |
 | Plain input or textarea | receives plain text, because the element cannot hold markup |
 
 The extension has no application-side character or word limit. The 50,000 character case is covered by
-`integration/tests/rich-text.spec.ts`, together with formatted insertion, sanitisation and formatted
-selection capture.
+`integration/tests/rich-text.spec.ts`, together with formatted insertion and sanitisation. Tables are
+covered by `integration/tests/tables.spec.ts`: Word-shaped markup, tab-separated fallback, borderless
+tables and the capture shortcut.
 
 ## 8. Known limitations
 
